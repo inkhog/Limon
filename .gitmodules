@@ -1,0 +1,3 @@
+[submodule "Limon/Dependencies"]
+	path = Limon/Dependencies
+	url = https://github.com/emuplace/Limon-Dependencies
