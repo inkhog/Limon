@@ -47,6 +47,7 @@ class LMEmulationController : UIViewController {
         useCustomBackgroundColor(.black)
         addSubviews()
         addSubviewConstraints()
+        registerControllerNotifications()
         if GCController.controllers().count > 0 {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: {
                 self.virtualControllerView.hide()
@@ -178,7 +179,7 @@ class LMEmulationController : UIViewController {
     
     // MARK: START REGISTER NOTIFICATIONS
     fileprivate func registerControllerNotifications() {
-        NotificationCenter.default.addObserver(forName: NSNotification.Name.GCMouseDidConnect, object: nil, queue: .main, using: controllerDidConnect(_:))
+        NotificationCenter.default.addObserver(forName: NSNotification.Name.GCControllerDidConnect, object: nil, queue: .main, using: controllerDidConnect(_:))
         NotificationCenter.default.addObserver(forName: NSNotification.Name.GCControllerDidDisconnect, object: nil, queue: .main, using: controllerDidDisconnect(_:))
         
         NotificationCenter.default.addObserver(forName: .init("onRoomStateChanged"), object: nil, queue: .main, using: onRoomStateChanged(_:))
