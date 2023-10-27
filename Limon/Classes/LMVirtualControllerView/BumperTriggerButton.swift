@@ -22,7 +22,13 @@ class BumperTriggerButton : UIView {
         }
         
         var systemName: String {
-            "\(rawValue).fill"
+            if #available(iOS 17, *) {
+                "\(rawValue).fill"
+            } else {
+                let cleaned = rawValue.replacingOccurances(of: ".button", with: "")
+                    .replacingOccurances(of: ".horizontal", with: "")
+                return "\(cleaned).fill"
+            }
         }
         
         var letter: String {
