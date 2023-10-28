@@ -22,8 +22,7 @@ EmulationWindow_Apple::EmulationWindow_Apple(CA::MetalLayer* surface, bool is_se
     is_portrait = true;
     if (!surface)
         return;
-
-    NSLog(@"%f, %f", size.width, size.height);
+    
     window_width = size.width;
     window_height = size.height;
 
