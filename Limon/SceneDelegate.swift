@@ -33,30 +33,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                                                     icon: .init(systemName: "app.badge.fill")?.applyingSymbolConfiguration(.init(paletteColors: [.systemRed, .tintColor])))
         welcomeController.set_shouldInlineButtontray(true)
         
-        welcomeController.addBulletedListItem(withTitle: "Audio Input Support",
-                                              description: "Added a new audio input backend allowing for microphone usage within games that make use of the microphone",
-                                              image: .init(systemName: "mic.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Audio Output Support",
-                                              description: "Added 2 new audio output backends improving compatibility with some Bluetooth audio devices",
-                                              image: .init(systemName: "speaker.wave.3.fill"))
-        welcomeController.addBulletedListItem(withTitle: "All-New Layout",
-                                              description: "Gone are the days of the list as Limón now comes with a clean, minimal card style layout",
-                                              image: .init(systemName: "square.grid.2x2.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Physical Controller Support",
-                                              description: "Connect an Apple compatible controller and experience 3DS games in a new way",
+        welcomeController.addBulletedListItem(withTitle: "Fixed Physical Controllers",
+                                              description: "Physical controllers such as Nintendo Switch Joycons, PlayStation 4 and 5 and Xbox One controllers should now connect, disconnect and function as expected",
                                               image: .init(systemName: "gamecontroller.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Virtual Controller Support",
-                                              description: "Developed from the ground up, the all-new on-screen (virtual) controller is now more beatiful and responsive than ever",
+        welcomeController.addBulletedListItem(withTitle: "Improved Virtual Controller",
+                                              description: "Limón's virtual controller now has full thumbstick support which can be used by tapping and moving from the center of the left and right button pads and moving outwards",
                                               image: .init(systemName: "gamecontroller.fill"))
-        welcomeController.addBulletedListItem(withTitle: "In-Game Settings",
-                                              description: "Change screen layout, connect to multiplayer and more, all in-game",
+        welcomeController.addBulletedListItem(withTitle: "Improved In-Game Settings",
+                                              description: "Less clutter doesn't mean better and that's why the in-game settings has now been overhauled with proper Appearance, Multiplayer, Screen Layout and Emulation State submenus",
                                               image: .init(systemName: "gearshape.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Import CIA",
-                                              description: "Import CTR Importable Archives for no reason other than to clean up the roms/ folder",
-                                              image: .init(systemName: "arrow.down.doc.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Multiplayer Support",
-                                              description: "Play with users over LAN or across the interwebs with Direct Connect support",
-                                              image: .init(systemName: "person.2.fill"))
         
         
         var acknowledgeButtonConfiguration = UIButton.Configuration.filled()
