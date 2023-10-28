@@ -15,7 +15,8 @@ protocol BumperTriggerButtonDelegate {
 
 class BumperTriggerButton : UIView {
     enum ButtonType : String {
-        case l = "l.button.roundedbottom.horizontal", zl = "zl.button.roundedtop.horizontal", r = "r.button.roundedbottom.horizontal", zr = "zr.button.roundedtop.horizontal"
+        case l = "l.button.roundedbottom.horizontal", zl = "zl.button.roundedtop.horizontal",
+             r = "r.button.roundedbottom.horizontal", zr = "zr.button.roundedtop.horizontal"
         
         var color: UIColor {
             .systemGray
@@ -23,10 +24,10 @@ class BumperTriggerButton : UIView {
         
         var systemName: String {
             if #available(iOS 17, *) {
-                "\(rawValue).fill"
+                return "\(rawValue).fill"
             } else {
-                let cleaned = rawValue.replacingOccurances(of: ".button", with: "")
-                    .replacingOccurances(of: ".horizontal", with: "")
+                let cleaned = rawValue.replacingOccurrences(of: ".button", with: "")
+                    .replacingOccurrences(of: ".horizontal", with: "")
                 return "\(cleaned).fill"
             }
         }

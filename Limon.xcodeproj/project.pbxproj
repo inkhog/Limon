@@ -439,6 +439,7 @@
 		E6B7AD312ACFE88E00859FC3 /* libswresample.xcframework in Embed Libraries */ = {isa = PBXBuildFile; fileRef = E65E972A2ACFB2E0004FD046 /* libswresample.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		E6B7AD322ACFE88F00859FC3 /* libswscale.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = E65E972C2ACFB2E0004FD046 /* libswscale.xcframework */; };
 		E6B7AD332ACFE88F00859FC3 /* libswscale.xcframework in Embed Libraries */ = {isa = PBXBuildFile; fileRef = E65E972C2ACFB2E0004FD046 /* libswscale.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		E6CBD2202AECB90F00FFBEF2 /* ThumbstickView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6CBD21F2AECB90F00FFBEF2 /* ThumbstickView.swift */; };
 		E6DFA8112AE30E2400795923 /* libdynarmic.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = E6DFA8102AE30E2400795923 /* libdynarmic.xcframework */; };
 		E6DFA8162AE3117200795923 /* libfmt.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = E6DFA8142AE3117200795923 /* libfmt.xcframework */; };
 		E6DFA8172AE3117200795923 /* libmcl.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = E6DFA8152AE3117200795923 /* libmcl.xcframework */; };
@@ -922,6 +923,7 @@
 		E6B7AD242ACFE50E00859FC3 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		E6B7AD362ACFF07600859FC3 /* OnboardingKit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OnboardingKit.h; sourceTree = "<group>"; };
 		E6B7AD372ACFF11900859FC3 /* Limon-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Limon-Bridging-Header.h"; sourceTree = "<group>"; };
+		E6CBD21F2AECB90F00FFBEF2 /* ThumbstickView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbstickView.swift; sourceTree = "<group>"; };
 		E6DFA8102AE30E2400795923 /* libdynarmic.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libdynarmic.xcframework; sourceTree = "<group>"; };
 		E6DFA8142AE3117200795923 /* libfmt.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libfmt.xcframework; sourceTree = "<group>"; };
 		E6DFA8152AE3117200795923 /* libmcl.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libmcl.xcframework; sourceTree = "<group>"; };
@@ -1053,6 +1055,7 @@
 				E61EAE7C2ADF9DCB00F73655 /* ABXYButton.swift */,
 				E61EAE7E2ADF9DE900F73655 /* LDURButton.swift */,
 				E61537AF2AD3E873005053B9 /* LMVirtualControllerView.swift */,
+				E6CBD21F2AECB90F00FFBEF2 /* ThumbstickView.swift */,
 			);
 			path = LMVirtualControllerView;
 			sourceTree = "<group>";
@@ -2607,6 +2610,7 @@
 				E6750C4B2AE304F10088C05F /* vk_descriptor_pool.cpp in Sources */,
 				E6750BB82AE304F00088C05F /* news.cpp in Sources */,
 				E6750C272AE304F10088C05F /* loader.cpp in Sources */,
+				E6CBD2202AECB90F00FFBEF2 /* ThumbstickView.swift in Sources */,
 				E6750BBA2AE304F00088C05F /* http_c.cpp in Sources */,
 				E6750C2A2AE304F10088C05F /* arm_tick_counts.cpp in Sources */,
 				E6750BF92AE304F00088C05F /* recorder.cpp in Sources */,

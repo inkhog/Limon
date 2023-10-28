@@ -59,14 +59,6 @@ class LMEmulationController : UIViewController {
         })
         thread.qualityOfService = .userInteractive
         thread.threadPriority = 1.0
-        
-        let swipeDown = UISwipeGestureRecognizer(target: self, action: #selector(hideBumpersTriggers))
-        swipeDown.direction = .down
-        view.addGestureRecognizer(swipeDown)
-        
-        let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(showBumpersTriggers))
-        swipeUp.direction = .up
-        view.addGestureRecognizer(swipeUp)
     }
     
     override var prefersStatusBarHidden: Bool {
@@ -121,6 +113,8 @@ class LMEmulationController : UIViewController {
         virtualControllerView.ldurButtonDelegate = self
         virtualControllerView.selectStartButtonDelegate = self
         virtualControllerView.bumperTriggerButtonDelegate = self
+        virtualControllerView.leftThumbstickViewDelegate = self
+        virtualControllerView.rightThumbstickViewDelegate = self
         virtualControllerView.addAllButtons()
         view.addSubview(virtualControllerView)
         
@@ -346,18 +340,6 @@ class LMEmulationController : UIViewController {
         ])
     }
     // MARK: END IN GAME SETTINGS MENU
-    
-    
-    
-    // MARK: START ADD SWIPE GESTURE RECOGNIZERS
-    @objc fileprivate func hideBumpersTriggers() {
-        virtualControllerView.hideBumpersTriggers()
-    }
-    
-    @objc fileprivate func showBumpersTriggers() {
-        virtualControllerView.showBumpersTriggers()
-    }
-    // MARK: END ADD SWIPE GESTURE RECOGNIZER
 }
 
 
@@ -479,3 +461,27 @@ extension LMEmulationController : BumperTriggerButtonDelegate {
     }
 }
 // MARK: END BUMPER TRIGGER BUTTON DELEGATE
+
+
+
+// MARK: START THUMBSTICK VIEW DELEGATE
+extension LMEmulationController : ThumbstickViewDelegate {
+    func touchesBegan(_ position: ThumbstickTouchPosition, for thumbstick: ThumbstickView.ThumbstickType) {
+        
+    }
+    
+    func touchesEnded() {
+        EmulationInput.leftThumbstick.valueChangedHandler(nil, x: 0, y: 0)
+        EmulationInput.rightThumstick.valueChangedHandler(nil, x: 0, y: 0)
+    }
+    
+    func touchesMoved(_ position: ThumbstickTouchPosition, for thumbstick: ThumbstickView.ThumbstickType) {
+        switch thumbstick {
+        case .left:
+            EmulationInput.leftThumbstick.valueChangedHandler(nil, x: position.x, y: position.y)
+        case .right:
+            EmulationInput.rightThumstick.valueChangedHandler(nil, x: position.x, y: position.y)
+        }
+    }
+}
+// MARK: END THUMBSTICK VIEW DELEGATE

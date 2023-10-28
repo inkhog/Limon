@@ -13,11 +13,14 @@ class LMVirtualControllerView : UIView {
     var ldurButtonDelegate: LDURButtonDelegate?
     var selectStartButtonDelegate: SelectStartButtonDelegate?
     var bumperTriggerButtonDelegate: BumperTriggerButtonDelegate?
+    var leftThumbstickViewDelegate, rightThumbstickViewDelegate: ThumbstickViewDelegate?
     
     var aButton, bButton, xButton, yButton: ABXYButton!
     var leftButton, downButton, upButton, rightButton: LDURButton!
     var selectButton, startButton: SelectStartButton!
     var lButton, zlButton, rButton, zrButton: BumperTriggerButton!
+    
+    var leftThumbstickView, rightThumbstickView: ThumbstickView!
     
     enum State {
         case activated, deactivated
@@ -31,6 +34,14 @@ class LMVirtualControllerView : UIView {
     var state: State = .activated
     override init(frame: CGRect) {
         super.init(frame: frame)
+        
+        //let swipeDown = UISwipeGestureRecognizer(target: self, action: #selector(hideBumpersTriggers))
+        //swipeDown.direction = .down
+        //addGestureRecognizer(swipeDown)
+        
+        //let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(showBumpersTriggers))
+        //swipeUp.direction = .up
+        //addGestureRecognizer(swipeUp)
     }
     
     required init?(coder: NSCoder) {
@@ -38,7 +49,7 @@ class LMVirtualControllerView : UIView {
     }
     
     
-    func hideBumpersTriggers() {
+    @objc func hideBumpersTriggers() {
         if #available(iOS 17, *) {
             lButton.letterImageView.addSymbolEffect(.disappear)
             zlButton.letterImageView.addSymbolEffect(.disappear)
@@ -59,7 +70,7 @@ class LMVirtualControllerView : UIView {
         zrButton.isUserInteractionEnabled = false
     }
     
-    func showBumpersTriggers() {
+    @objc func showBumpersTriggers() {
         if #available(iOS 17, *) {
             lButton.letterImageView.addSymbolEffect(.appear)
             zlButton.letterImageView.addSymbolEffect(.appear)
@@ -264,6 +275,37 @@ class LMVirtualControllerView : UIView {
             zrButton.heightAnchor.constraint(equalToConstant: 48),
             zrButton.topAnchor.constraint(equalTo: rButton.safeAreaLayoutGuide.topAnchor),
             zrButton.trailingAnchor.constraint(equalTo: rButton.safeAreaLayoutGuide.leadingAnchor, constant: -20)
+        ])
+    }
+    
+    
+    func addLeftThumbstickView() {
+        leftThumbstickView = .init(.left)
+        leftThumbstickView.translatesAutoresizingMaskIntoConstraints = false
+        leftThumbstickView.delegate = leftThumbstickViewDelegate
+        addSubview(leftThumbstickView)
+        insertSubview(leftThumbstickView, belowSubview: leftButton)
+        
+        addConstraints([
+            leftThumbstickView.topAnchor.constraint(equalTo: upButton.topAnchor),
+            leftThumbstickView.leadingAnchor.constraint(equalTo: leftButton.leadingAnchor),
+            leftThumbstickView.bottomAnchor.constraint(equalTo: downButton.bottomAnchor),
+            leftThumbstickView.trailingAnchor.constraint(equalTo: rightButton.trailingAnchor)
+        ])
+    }
+    
+    func addRightThumbstickView() {
+        rightThumbstickView = .init(.right)
+        rightThumbstickView.translatesAutoresizingMaskIntoConstraints = false
+        rightThumbstickView.delegate = rightThumbstickViewDelegate
+        addSubview(rightThumbstickView)
+        insertSubview(rightThumbstickView, belowSubview: aButton)
+        
+        addConstraints([
+            rightThumbstickView.topAnchor.constraint(equalTo: xButton.topAnchor),
+            rightThumbstickView.leadingAnchor.constraint(equalTo: yButton.leadingAnchor),
+            rightThumbstickView.bottomAnchor.constraint(equalTo: bButton.bottomAnchor),
+            rightThumbstickView.trailingAnchor.constraint(equalTo: aButton.trailingAnchor)
         ])
     }
     
@@ -505,5 +547,8 @@ class LMVirtualControllerView : UIView {
         addZLButton()
         addRButton()
         addZRButton()
+        
+        addLeftThumbstickView()
+        addRightThumbstickView()
     }
 }
