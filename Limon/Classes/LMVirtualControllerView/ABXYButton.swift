@@ -9,8 +9,7 @@ import Foundation
 import UIKit
 
 protocol ABXYButtonDelegate {
-    func touchDown(_ buttonType: ABXYButton.ButtonType)
-    func touchUpInside(_ buttonType: ABXYButton.ButtonType)
+    func touch(_ buttonType: ABXYButton.ButtonType, _ touchType: TouchType)
 }
 
 class ABXYButton : UIView {
