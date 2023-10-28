@@ -421,6 +421,10 @@
 		E6750CD82AE304F10088C05F /* announce_room_json.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E6750B382AE304F00088C05F /* announce_room_json.cpp */; };
 		E6750CD92AE304F10088C05F /* telemetry_json.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E6750B392AE304F00088C05F /* telemetry_json.cpp */; };
 		E6750CDA2AE304F10088C05F /* web_backend.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E6750B3B2AE304F00088C05F /* web_backend.cpp */; };
+		E68390222AECD535009AD418 /* LMEmulationController+PhysicalController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E68390212AECD535009AD418 /* LMEmulationController+PhysicalController.swift */; };
+		E68390252AECD797009AD418 /* LMEmulationController+VirtualController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E68390242AECD797009AD418 /* LMEmulationController+VirtualController.swift */; };
+		E68390272AECD937009AD418 /* TouchType.swift in Sources */ = {isa = PBXBuildFile; fileRef = E68390262AECD937009AD418 /* TouchType.swift */; };
+		E68390292AECDD92009AD418 /* LMEmulationController+InGameSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E68390282AECDD92009AD418 /* LMEmulationController+InGameSettings.swift */; };
 		E6B7AD1B2ACFE46F00859FC3 /* AVFAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E6B7AD1A2ACFE46F00859FC3 /* AVFAudio.framework */; };
 		E6B7AD1D2ACFE48A00859FC3 /* GameController.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E6B7AD1C2ACFE48A00859FC3 /* GameController.framework */; };
 		E6B7AD1F2ACFE4DE00859FC3 /* CoreHaptics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E6B7AD1E2ACFE4DE00859FC3 /* CoreHaptics.framework */; };
@@ -915,6 +919,10 @@
 		E6750B382AE304F00088C05F /* announce_room_json.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = announce_room_json.cpp; sourceTree = "<group>"; };
 		E6750B392AE304F00088C05F /* telemetry_json.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = telemetry_json.cpp; sourceTree = "<group>"; };
 		E6750B3B2AE304F00088C05F /* web_backend.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = web_backend.cpp; sourceTree = "<group>"; };
+		E68390212AECD535009AD418 /* LMEmulationController+PhysicalController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LMEmulationController+PhysicalController.swift"; sourceTree = "<group>"; };
+		E68390242AECD797009AD418 /* LMEmulationController+VirtualController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LMEmulationController+VirtualController.swift"; sourceTree = "<group>"; };
+		E68390262AECD937009AD418 /* TouchType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchType.swift; sourceTree = "<group>"; };
+		E68390282AECDD92009AD418 /* LMEmulationController+InGameSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LMEmulationController+InGameSettings.swift"; sourceTree = "<group>"; };
 		E6B7AD1A2ACFE46F00859FC3 /* AVFAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFAudio.framework; path = System/Library/Frameworks/AVFAudio.framework; sourceTree = SDKROOT; };
 		E6B7AD1C2ACFE48A00859FC3 /* GameController.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameController.framework; path = System/Library/Frameworks/GameController.framework; sourceTree = SDKROOT; };
 		E6B7AD1E2ACFE4DE00859FC3 /* CoreHaptics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreHaptics.framework; path = System/Library/Frameworks/CoreHaptics.framework; sourceTree = SDKROOT; };
@@ -1018,6 +1026,7 @@
 		E615379A2AD3CC69005053B9 /* LMEmulationController */ = {
 			isa = PBXGroup;
 			children = (
+				E68390202AECD521009AD418 /* Extensions */,
 				E615379B2AD3CC75005053B9 /* LMEmulationController.swift */,
 			);
 			path = LMEmulationController;
@@ -1056,6 +1065,7 @@
 				E61EAE7E2ADF9DE900F73655 /* LDURButton.swift */,
 				E61537AF2AD3E873005053B9 /* LMVirtualControllerView.swift */,
 				E6CBD21F2AECB90F00FFBEF2 /* ThumbstickView.swift */,
+				E68390262AECD937009AD418 /* TouchType.swift */,
 			);
 			path = LMVirtualControllerView;
 			sourceTree = "<group>";
@@ -2261,6 +2271,16 @@
 			path = web_service;
 			sourceTree = "<group>";
 		};
+		E68390202AECD521009AD418 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				E68390212AECD535009AD418 /* LMEmulationController+PhysicalController.swift */,
+				E68390242AECD797009AD418 /* LMEmulationController+VirtualController.swift */,
+				E68390282AECDD92009AD418 /* LMEmulationController+InGameSettings.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
 		E6B7A7762ACFDD7600859FC3 /* Citra */ = {
 			isa = PBXGroup;
 			children = (
@@ -2563,6 +2583,7 @@
 				E65E977C2ACFB2E2004FD046 /* lodepng_util.cpp in Sources */,
 				E6750CC22AE304F10088C05F /* filter.cpp in Sources */,
 				E6750C532AE304F10088C05F /* vk_rasterizer_cache.cpp in Sources */,
+				E68390292AECDD92009AD418 /* LMEmulationController+InGameSettings.swift in Sources */,
 				E6750B9E2AE304F00088C05F /* cfg_defaults.cpp in Sources */,
 				E6750C492AE304F10088C05F /* vk_renderpass_cache.cpp in Sources */,
 				E6750B3D2AE304F00088C05F /* thread.cpp in Sources */,
@@ -2598,6 +2619,7 @@
 				E6750B4B2AE304F00088C05F /* cityhash.cpp in Sources */,
 				E6750B632AE304F00088C05F /* mii_selector.cpp in Sources */,
 				E6750BFB2AE304F00088C05F /* mii_selector.cpp in Sources */,
+				E68390272AECD937009AD418 /* TouchType.swift in Sources */,
 				E6750BEB2AE304F00088C05F /* server_session.cpp in Sources */,
 				E6750B402AE304F00088C05F /* file_util.cpp in Sources */,
 				E6750C6C2AE304F10088C05F /* video_core.cpp in Sources */,
@@ -2673,6 +2695,7 @@
 				E6750CC62AE304F10088C05F /* decoder.cpp in Sources */,
 				E6750BB22AE304F00088C05F /* y2r_u.cpp in Sources */,
 				E6750BA32AE304F00088C05F /* nwm_tst.cpp in Sources */,
+				E68390222AECD535009AD418 /* LMEmulationController+PhysicalController.swift in Sources */,
 				E6750BFE2AE304F10088C05F /* interface.cpp in Sources */,
 				E6750CD02AE304F10088C05F /* sdl2_sink.cpp in Sources */,
 				E6750B8D2AE304F00088C05F /* extra_hid.cpp in Sources */,
@@ -2749,6 +2772,7 @@
 				E6750C452AE304F10088C05F /* vk_pipeline_cache.cpp in Sources */,
 				E6750C002AE304F10088C05F /* factory.cpp in Sources */,
 				E6750CAE2AE304F10088C05F /* sdl.cpp in Sources */,
+				E68390252AECD797009AD418 /* LMEmulationController+VirtualController.swift in Sources */,
 				E6750BE02AE304F00088C05F /* client_session.cpp in Sources */,
 				E65E544D2ACFA5C5004FD046 /* AppDelegate.swift in Sources */,
 				E6750B732AE304F00088C05F /* ptm_u.cpp in Sources */,
@@ -3092,7 +3116,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Limon/Dependencies/dylibs",
 				);
-				MARKETING_VERSION = 1.0.8.0;
+				MARKETING_VERSION = 1.0.8.1;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.antique.Limon;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -3146,7 +3170,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Limon/Dependencies/dylibs",
 				);
-				MARKETING_VERSION = 1.0.8.0;
+				MARKETING_VERSION = 1.0.8.1;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.antique.Limon;
 				PRODUCT_NAME = "$(TARGET_NAME)";

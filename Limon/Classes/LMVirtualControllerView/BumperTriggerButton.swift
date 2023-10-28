@@ -9,8 +9,7 @@ import Foundation
 import UIKit
 
 protocol BumperTriggerButtonDelegate {
-    func touchDown(_ buttonType: BumperTriggerButton.ButtonType)
-    func touchUpInside(_ buttonType: BumperTriggerButton.ButtonType)
+    func touch(_ buttonType: BumperTriggerButton.ButtonType, _ touchType: TouchType)
 }
 
 class BumperTriggerButton : UIView {

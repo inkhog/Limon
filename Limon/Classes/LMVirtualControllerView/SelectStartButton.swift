@@ -9,8 +9,7 @@ import Foundation
 import UIKit
 
 protocol SelectStartButtonDelegate {
-    func touchDown(_ buttonType: SelectStartButton.ButtonType)
-    func touchUpInside(_ buttonType: SelectStartButton.ButtonType)
+    func touch(_ buttonType: SelectStartButton.ButtonType, _ touchType: TouchType)
 }
 
 class SelectStartButton : UIView {

@@ -31,7 +31,10 @@ class LMVirtualControllerView : UIView {
     }
     
     var appearance: Appearance = .filled
+    var bumpersTriggersHidden: Bool = false
     var state: State = .activated
+    
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         
@@ -50,6 +53,7 @@ class LMVirtualControllerView : UIView {
     
     
     @objc func hideBumpersTriggers() {
+        bumpersTriggersHidden = true
         if #available(iOS 17, *) {
             lButton.letterImageView.addSymbolEffect(.disappear)
             zlButton.letterImageView.addSymbolEffect(.disappear)
@@ -71,6 +75,7 @@ class LMVirtualControllerView : UIView {
     }
     
     @objc func showBumpersTriggers() {
+        bumpersTriggersHidden = false
         if #available(iOS 17, *) {
             lButton.letterImageView.addSymbolEffect(.appear)
             zlButton.letterImageView.addSymbolEffect(.appear)
@@ -90,6 +95,7 @@ class LMVirtualControllerView : UIView {
         rButton.isUserInteractionEnabled = true
         zrButton.isUserInteractionEnabled = true
     }
+    
     
     func addAButton() {
         aButton = .init(.a)
@@ -412,34 +418,14 @@ class LMVirtualControllerView : UIView {
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         
         switch touch.view {
-        case aButton:
-            abxyButtonDelegate.touchDown(.a)
-        case bButton:
-            abxyButtonDelegate.touchDown(.b)
-        case xButton:
-            abxyButtonDelegate.touchDown(.x)
-        case yButton:
-            abxyButtonDelegate.touchDown(.y)
-        case leftButton:
-            ldurButtonDelegate.touchDown(.left)
-        case downButton:
-            ldurButtonDelegate.touchDown(.down)
-        case upButton:
-            ldurButtonDelegate.touchDown(.up)
-        case rightButton:
-            ldurButtonDelegate.touchDown(.right)
-        case selectButton:
-            selectStartButtonDelegate.touchDown(.select)
-        case startButton:
-            selectStartButtonDelegate.touchDown(.start)
-        case lButton:
-            bumperTriggerButtonDelegate.touchDown(.l)
-        case zlButton:
-            bumperTriggerButtonDelegate.touchDown(.zl)
-        case rButton:
-            bumperTriggerButtonDelegate.touchDown(.r)
-        case zrButton:
-            bumperTriggerButtonDelegate.touchDown(.zr)
+        case aButton, bButton, xButton, yButton:
+            abxyButtonDelegate.touch((touch.view as! ABXYButton).buttonType, .down)
+        case leftButton, downButton, upButton, rightButton:
+            ldurButtonDelegate.touch((touch.view as! LDURButton).buttonType, .down)
+        case selectButton, startButton:
+            selectStartButtonDelegate.touch((touch.view as! SelectStartButton).buttonType, .down)
+        case lButton, zlButton, rButton, zrButton:
+            bumperTriggerButtonDelegate.touch((touch.view as! BumperTriggerButton).buttonType, .down)
         default:
             break
         }
@@ -452,34 +438,14 @@ class LMVirtualControllerView : UIView {
         }
         
         switch touch.view {
-        case aButton:
-            abxyButtonDelegate.touchUpInside(.a)
-        case bButton:
-            abxyButtonDelegate.touchUpInside(.b)
-        case xButton:
-            abxyButtonDelegate.touchUpInside(.x)
-        case yButton:
-            abxyButtonDelegate.touchUpInside(.y)
-        case leftButton:
-            ldurButtonDelegate.touchUpInside(.left)
-        case downButton:
-            ldurButtonDelegate.touchUpInside(.down)
-        case upButton:
-            ldurButtonDelegate.touchUpInside(.up)
-        case rightButton:
-            ldurButtonDelegate.touchUpInside(.right)
-        case selectButton:
-            selectStartButtonDelegate.touchUpInside(.select)
-        case startButton:
-            selectStartButtonDelegate.touchUpInside(.start)
-        case lButton:
-            bumperTriggerButtonDelegate.touchUpInside(.l)
-        case zlButton:
-            bumperTriggerButtonDelegate.touchUpInside(.zl)
-        case rButton:
-            bumperTriggerButtonDelegate.touchUpInside(.r)
-        case zrButton:
-            bumperTriggerButtonDelegate.touchUpInside(.zr)
+        case aButton, bButton, xButton, yButton:
+            abxyButtonDelegate.touch((touch.view as! ABXYButton).buttonType, .up)
+        case leftButton, downButton, upButton, rightButton:
+            ldurButtonDelegate.touch((touch.view as! LDURButton).buttonType, .up)
+        case selectButton, startButton:
+            selectStartButtonDelegate.touch((touch.view as! SelectStartButton).buttonType, .up)
+        case lButton, zlButton, rButton, zrButton:
+            bumperTriggerButtonDelegate.touch((touch.view as! BumperTriggerButton).buttonType, .up)
         default:
             break
         }

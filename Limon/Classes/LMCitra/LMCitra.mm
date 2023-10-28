@@ -132,7 +132,7 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
     Input::RegisterFactory<Input::ButtonDevice>("ios_gamepad", std::make_shared<ButtonFactory>());
     
     Settings::values.use_cpu_jit.SetValue(EmulationSettings.useCPUJIT);
-    Settings::values.cpu_clock_percentage.SetValue([[NSNumber numberWithInteger:EmulationSettings.cpuClockPercentage] intValue]);
+    Settings::values.cpu_clock_percentage.SetValue([[NSNumber numberWithInteger:EmulationSettings.cpuClockPercentage] unsignedIntValue]);
     Settings::values.is_new_3ds.SetValue(EmulationSettings.isNew3DS);
     
     Settings::values.spirv_shader_gen.SetValue(EmulationSettings.spirvShaderGen);
@@ -143,16 +143,16 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
     Settings::values.shaders_accurate_mul.SetValue(EmulationSettings.shadersAccurateMul);
     Settings::values.use_vsync_new.SetValue(EmulationSettings.useNewVSync);
     Settings::values.use_shader_jit.SetValue(EmulationSettings.useShaderJIT);
-    Settings::values.resolution_factor.SetValue([[NSNumber numberWithInteger:EmulationSettings.resolutionFactor] intValue]);
+    Settings::values.resolution_factor.SetValue([[NSNumber numberWithInteger:EmulationSettings.resolutionFactor] unsignedIntValue]);
     Settings::values.frame_limit.SetValue(EmulationSettings.frameLimit);
     Settings::values.texture_filter.SetValue((Settings::TextureFilter)EmulationSettings.textureFilter);
     
     Settings::values.render_3d.SetValue((Settings::StereoRenderOption)EmulationSettings.stereoRender);
-    Settings::values.factor_3d.SetValue([[NSNumber numberWithInteger:EmulationSettings.factor3D] intValue]);
+    Settings::values.factor_3d.SetValue([[NSNumber numberWithInteger:EmulationSettings.factor3D] unsignedIntValue]);
     Settings::values.mono_render_option.SetValue((Settings::MonoRenderOption)EmulationSettings.monoRender);
     
-    Settings::values.input_type.SetValue((AudioCore::InputType)[[NSNumber numberWithInteger:EmulationSettings.audioInputType] intValue]);
-    Settings::values.output_type.SetValue((AudioCore::SinkType)[[NSNumber numberWithInteger:EmulationSettings.audioOutputType] intValue]);
+    Settings::values.input_type.SetValue((AudioCore::InputType)[[NSNumber numberWithInteger:EmulationSettings.audioInputType] unsignedIntValue]);
+    Settings::values.output_type.SetValue((AudioCore::SinkType)[[NSNumber numberWithInteger:EmulationSettings.audioOutputType] unsignedIntValue]);
     
     core.ApplySettings();
     Settings::LogSettings();

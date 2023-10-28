@@ -9,8 +9,7 @@ import Foundation
 import UIKit
 
 protocol LDURButtonDelegate {
-    func touchDown(_ buttonType: LDURButton.ButtonType)
-    func touchUpInside(_ buttonType: LDURButton.ButtonType)
+    func touch(_ buttonType: LDURButton.ButtonType, _ touchType: TouchType)
 }
 
 class LDURButton : UIView {
