@@ -17,6 +17,7 @@
 #include "common/logging/backend.h"
 #include "common/logging/log.h"
 #include "core/core.h"
+#include "core/savestate.h"
 #include "core/loader/loader.h"
 
 #include <dlfcn.h>
@@ -29,6 +30,17 @@
 Core::System& core{Core::System::GetInstance()};
 std::unique_ptr<LMEmulationWindow_Vulkan> window;
 std::shared_ptr<Common::DynamicLibrary> vulkan_library;
+
+
+@implementation LMSaveState
+-(LMSaveState *) initWithURL:(NSURL *)url title:(NSString *)title {
+    if (self = [super init]) {
+        self.url = url;
+        self.title = title;
+    } return self;
+}
+@end
+
 
 @implementation LMCitra
 -(LMCitra *) init {
@@ -173,7 +185,7 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
 -(void) setLayoutOption:(NSUInteger)option with:(CAMetalLayer *)layer {
     self._layoutOption = option;
     
-    Settings::values.layout_option.SetValue((Settings::LayoutOption)[[NSNumber numberWithInteger:self._layoutOption] intValue]);
+    Settings::values.layout_option.SetValue((Settings::LayoutOption)[[NSNumber numberWithInteger:self._layoutOption] unsignedIntegerValue]);
     [self setOrientation:[[UIDevice currentDevice] orientation] with:layer];
 }
 
@@ -201,7 +213,7 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
 
 -(void) run {
     window->MakeCurrent();
-    core.Load(*window, std::string([_path UTF8String]));
+    auto _ = core.Load(*window, std::string([_path UTF8String]));
     
     Core::TimingEventType* audio_stretching_event{};
     const s64 audio_stretching_ticks{msToCycles(500)};
@@ -225,11 +237,19 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
             if (Settings::values.volume.GetValue() == 0)
                 Settings::values.volume.SetValue(1);
             
-            core.RunLoop();
+            auto _ = core.RunLoop();
         } else {
             if (Settings::values.volume.GetValue() == 1)
                 Settings::values.volume.SetValue(0);
+            
+            window->PollEvents();
         }
+        
+        if (_isLoading)
+            [self load];
+        
+        if (_isSaving)
+            [self save];
     }
 }
 
@@ -239,7 +259,7 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
 
 
 -(void) touchesBegan:(CGPoint)point {
-    window->OnTouchEvent((point.x/* * [[UIScreen mainScreen] nativeScale]*/) + 0.5, (point.y/* * [[UIScreen mainScreen] nativeScale]*/) + 0.5);
+    window->OnTouchEvent(point.x, point.y);
 }
 
 -(void) touchesEnded {
@@ -247,7 +267,7 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
 }
 
 -(void) touchesMoved:(CGPoint)point {
-    window->OnTouchMoved((point.x/* * [[UIScreen mainScreen] nativeScale]*/) + 0.5, (point.y/* * [[UIScreen mainScreen] nativeScale]*/) + 0.5);
+    window->OnTouchMoved(point.x, point.y);
 }
 
 -(BOOL) isPaused {
@@ -256,5 +276,72 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
 
 -(BOOL) isRunning {
     return _isRunning;
+}
+
+
+-(NSMutableArray<LMSaveState *> *) saveStates {
+    NSURL *saveStatesDirectory = [[[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] firstObject] URLByAppendingPathComponent:@"states"];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:saveStatesDirectory.path]) {
+        [[NSFileManager defaultManager] createDirectoryAtPath:saveStatesDirectory.path withIntermediateDirectories:FALSE attributes:NULL error:NULL];
+    }
+    
+    NSURL *saveStateForGameFolder = [saveStatesDirectory URLByAppendingPathComponent:[NSString stringWithFormat:@"%llu", title_id]];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:saveStateForGameFolder.path]) {
+        [[NSFileManager defaultManager] createDirectoryAtPath:saveStateForGameFolder.path withIntermediateDirectories:FALSE attributes:NULL error:NULL];
+    }
+    
+    NSMutableArray<LMSaveState *> *paths = @[].mutableCopy;
+    [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:saveStateForGameFolder.path error:NULL] enumerateObjectsUsingBlock:^(NSString *obj, NSUInteger idx, BOOL *stop) {
+        NSURL *url = [saveStateForGameFolder URLByAppendingPathComponent:obj];
+        
+        NSDictionary<NSFileAttributeKey, id> *dictionary = [[NSFileManager defaultManager] attributesOfItemAtPath:url.path error:NULL];
+        NSDate *date = [dictionary objectForKey:NSFileCreationDate];
+        
+        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        [formatter setDateStyle:NSDateFormatterShortStyle];
+        [formatter setTimeStyle:NSDateFormatterShortStyle];
+        
+        [paths addObject:[[LMSaveState alloc] initWithURL:[saveStateForGameFolder URLByAppendingPathComponent:obj] title:[formatter stringFromDate:date]]];
+    }];
+    
+    return paths;
+}
+
+-(void) prepareForLoad {
+    _isLoading = TRUE;
+    _isPaused = TRUE;
+}
+
+-(void) prepareForSave {
+    _isSaving = TRUE;
+    _isPaused = TRUE;
+}
+
+-(void) load:(NSURL *)url {
+    _savePath = url;
+}
+
+-(void) load {
+    Core::LoadState([_savePath.path UTF8String]);
+    
+    _isLoading = FALSE;
+    _isPaused = FALSE;
+}
+
+-(void) save {
+    NSURL *saveStatesDirectory = [[[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] firstObject] URLByAppendingPathComponent:@"states"];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:saveStatesDirectory.path]) {
+        [[NSFileManager defaultManager] createDirectoryAtPath:saveStatesDirectory.path withIntermediateDirectories:FALSE attributes:NULL error:NULL];
+    }
+    
+    NSURL *saveStateForGameFolder = [saveStatesDirectory URLByAppendingPathComponent:[NSString stringWithFormat:@"%llu", title_id]];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:saveStateForGameFolder.path]) {
+        [[NSFileManager defaultManager] createDirectoryAtPath:saveStateForGameFolder.path withIntermediateDirectories:FALSE attributes:NULL error:NULL];
+    }
+    
+    Core::SaveState([[saveStateForGameFolder URLByAppendingPathComponent:[NSUUID UUID].UUIDString].path UTF8String], title_id);
+    
+    _isSaving = FALSE;
+    _isPaused = FALSE;
 }
 @end

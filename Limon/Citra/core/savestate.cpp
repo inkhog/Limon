@@ -18,6 +18,11 @@
 #include "core/savestate_data.h"
 #include "network/network.h"
 
+#include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <zstd.h>
+#include <algorithm>
+
 namespace Core {
 
 #pragma pack(push, 1)
@@ -202,6 +207,97 @@ void System::LoadState(u32 slot) {
     // Deserialize
     iarchive ia{sstream};
     ia&* this;
+}
+
+
+bool InitMem() {
+    if (!save_addr2) {
+        kern_return_t retval = vm_allocate(mach_task_self(), &save_addr2, (size_t)size2, VM_FLAGS_ANYWHERE);
+        //int tries=0;
+        if (retval != KERN_SUCCESS) {
+            return false;
+        }
+    }
+    if (!save_addr) {
+        kern_return_t retval = vm_allocate(mach_task_self(), &save_addr, (size_t)size, VM_FLAGS_ANYWHERE);
+        //int tries=0;
+        if (retval != KERN_SUCCESS) {
+            return false;
+        }
+    }
+    for (size_t i = 0; i < size2; i++) {
+        ((u8 *)save_addr2)[i] = 0;
+    }
+    for (size_t i = 0; i < size; i++) {
+        ((u8 *)save_addr)[i] = 0;
+    }
+    return true;
+}
+
+void SaveState(std::string path, u64 _title_id) {
+    usleep(1000);
+    InitMem();
+    boost::iostreams::stream<boost::iostreams::basic_array_sink<char>> *stream=new boost::iostreams::stream<boost::iostreams::basic_array_sink<char>>(reinterpret_cast<char*>(save_addr2), size2);
+    // Serialize
+    oarchive *oa=new oarchive{*stream};
+    *oa&* &System::GetInstance();
+    const std::size_t compressed_size =
+        ZSTD_compress(
+                      (void *)(reinterpret_cast<const u8*>(save_addr)),
+                      (size_t)size,
+                      (void *)(reinterpret_cast<const u8*>(save_addr2)),
+                      (size_t)size2,
+                      (s32)std::clamp(ZSTD_CLEVEL_DEFAULT, ZSTD_minCLevel(), ZSTD_maxCLevel())
+        );
+    if (!FileUtil::CreateFullPath(path)) {
+        throw std::runtime_error("Could not create path " + path);
+    }
+    FileUtil::IOFile *file = new FileUtil::IOFile(path, "wb");
+    if (!file) {
+        throw std::runtime_error("Could not open file " + path);
+    }
+    CSTHeader header{};
+    header.filetype = header_magic_bytes;
+    header.program_id = _title_id;
+    std::string rev_bytes;
+    CryptoPP::StringSource ss(Common::g_scm_rev, true,
+                              new CryptoPP::HexDecoder(new CryptoPP::StringSink(rev_bytes)));
+    std::memcpy(header.revision.data(), rev_bytes.data(), sizeof(header.revision));
+    header.time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())
+    .count();
+    if (file->WriteBytes(&header, sizeof(header)) != sizeof(header) ||
+        file->WriteBytes((size_t *)save_addr, compressed_size) != compressed_size) {
+        throw std::runtime_error("Could not write to file " + path);
+    }
+    delete file;
+    delete oa;
+    delete stream;
+}
+
+void LoadState(std::string path) {
+    InitMem();
+    size_t buffer_size=FileUtil::GetSize(path) - sizeof(CSTHeader);
+    FileUtil::IOFile *file=new FileUtil::IOFile(path, "rb");
+    // load header
+    CSTHeader header;
+    if (file->ReadBytes(&header, sizeof(header)) != sizeof(header)) {
+        printf("Could not read from file at %s ", path.c_str());
+    }
+    if (file->ReadBytes((size_t *)save_addr, buffer_size) != buffer_size) {
+        printf("Could not read from file at %s", path.c_str());
+    }
+    // decompress
+    const std::size_t decompressed_size =
+        ZSTD_getFrameContentSize((void *)save_addr, buffer_size);
+    const std::size_t uncompressed_result_size = ZSTD_decompress(
+        (void *)save_addr2, decompressed_size, (void *)save_addr, buffer_size);
+    printf("Load State\n");
+    // Deserialize
+    boost::iostreams::stream<boost::iostreams::basic_array_source<char>> stream(reinterpret_cast<char*>(save_addr2), decompressed_size);
+    boost::archive::binary_iarchive *ia = new boost::archive::binary_iarchive{stream};
+    *ia&* &System::GetInstance();
+    delete ia;
+    delete file;
 }
 
 } // namespace Core

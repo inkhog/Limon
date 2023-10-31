@@ -33,15 +33,18 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                                                     icon: .init(systemName: "app.badge.fill")?.applyingSymbolConfiguration(.init(paletteColors: [.systemRed, .tintColor])))
         welcomeController.set_shouldInlineButtontray(true)
         
-        welcomeController.addBulletedListItem(withTitle: "Fixed Physical Controllers",
-                                              description: "Physical controllers such as Nintendo Switch Joycons, PlayStation 4 and 5 and Xbox One controllers should now connect, disconnect and function as expected",
+        welcomeController.addBulletedListItem(withTitle: "Fixed Virtual Controller",
+                                              description: "Fixed an issue where the virtual controller would be missing the L, ZL, R and ZR symbols on iOS 16",
                                               image: .init(systemName: "gamecontroller.fill"))
         welcomeController.addBulletedListItem(withTitle: "Improved Virtual Controller",
-                                              description: "Limón's virtual controller now has full thumbstick support which can be used by tapping and moving from the center of the left and right button pads and moving outwards",
+                                              description: "Partially rewrote the virtual controller to improve how the left and right thumbsticks are displayed and handled",
                                               image: .init(systemName: "gamecontroller.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Improved In-Game Settings",
-                                              description: "Less clutter doesn't mean better and that's why the in-game settings has now been overhauled with proper Appearance, Multiplayer, Screen Layout and Emulation State submenus",
-                                              image: .init(systemName: "gearshape.fill"))
+        welcomeController.addBulletedListItem(withTitle: "Implemented Load, Save States",
+                                              description: "Load and save states are here but be warned they may require a higher end device. Crashes on lower end devices are expected",
+                                              image: .init(systemName: "gamecontroller.fill"))
+        welcomeController.addBulletedListItem(withTitle: "Enhanced User Experience",
+                                              description: "Added haptic feedback for successful and unsuccessful Direct Room connections and thumbstick activation and sped up animations for all custom user interface elements",
+                                              image: .init(systemName: "gamecontroller.fill"))
         
         
         var acknowledgeButtonConfiguration = UIButton.Configuration.filled()
@@ -72,7 +75,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             loadingController.modalPresentationStyle = .fullScreen
             welcomeController.present(loadingController, animated: true)
         })))
-        
+        welcomeController.buttonTray.setCaptionText("v\(version).\(build)", style: 0)
         
         // UserDefaults.standard.removeObject(forKey: "acknowledgedWhatsNew_\(version).\(build)")
         window.rootViewController = UserDefaults.standard.bool(forKey: "dontShowWhatsNewAgain") ? LMLoadingController() : UserDefaults.standard.bool(forKey: "acknowledgedWhatsNew_\(version).\(build)") ? LMLoadingController() : welcomeController
@@ -123,8 +126,18 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
      */
     
+    func onError() { // TODO: (antique) add a post notification to the emulation view controller
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+    }
+    
     func onRoomStateChanged(state: RoomState) {
         NotificationCenter.default.post(name: .init("onRoomStateChanged"), object: state)
+        switch state {
+        case .RSJoined:
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+        default:
+            break
+        }
     }
     
     fileprivate func setDefaultSettings() {

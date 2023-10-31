@@ -51,7 +51,7 @@ bool LMEmulationWindow_Vulkan::CreateWindowSurface() {
     
     window_info.render_surface = host_window;
     window_info.type = Frontend::WindowSystemType::MacOS;
-    window_info.render_surface_scale = [[UIScreen mainScreen] nativeScale];
+    //window_info.render_surface_scale = [[UIScreen mainScreen] nativeScale];
     
     return true;
 };

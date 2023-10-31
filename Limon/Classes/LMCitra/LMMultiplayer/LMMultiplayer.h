@@ -37,7 +37,8 @@ typedef NS_ENUM(NSUInteger, RoomState) {
 @interface LMMultiplayer : NSObject
 +(LMMultiplayer *) sharedInstance;
 
--(void) directConnect:(NSString *)nickname ipAddress:(NSString *)ipAddress port:(NSString * _Nullable)port password:(NSString * _Nullable)password onRoomStateChanged:(void(^)(RoomState))onRoomStateChanged;
+-(void) directConnect:(NSString *)nickname ipAddress:(NSString *)ipAddress port:(NSString * _Nullable)port password:(NSString * _Nullable)password
+              onError:(void (^)())onError onRoomStateChanged:(void(^)(RoomState))onRoomStateChanged;
 @end
 
 NS_ASSUME_NONNULL_END

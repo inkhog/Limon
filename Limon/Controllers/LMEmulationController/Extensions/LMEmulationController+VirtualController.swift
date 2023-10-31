@@ -66,12 +66,23 @@ extension LMEmulationController : BumperTriggerButtonDelegate {
 
 extension LMEmulationController : ThumbstickViewDelegate {
     func touchesBegan(_ position: ThumbstickTouchPosition, for thumbstick: ThumbstickView.ThumbstickType) {
-        
+        switch thumbstick {
+        case .left:
+            virtualControllerView.hideLeftPadView()
+        case .right:
+            virtualControllerView.hideRightPadView()
+        }
     }
     
-    func touchesEnded() {
-        EmulationInput.leftThumbstick.valueChangedHandler(nil, x: 0, y: 0)
-        EmulationInput.rightThumstick.valueChangedHandler(nil, x: 0, y: 0)
+    func touchesEnded(for thumbstick: ThumbstickView.ThumbstickType) {
+        switch thumbstick {
+        case .left:
+            virtualControllerView.showLeftPadView()
+            EmulationInput.leftThumbstick.valueChangedHandler(nil, x: 0, y: 0)
+        case .right:
+            virtualControllerView.showRightPadView()
+            EmulationInput.rightThumstick.valueChangedHandler(nil, x: 0, y: 0)
+        }
     }
     
     func touchesMoved(_ position: ThumbstickTouchPosition, for thumbstick: ThumbstickView.ThumbstickType) {

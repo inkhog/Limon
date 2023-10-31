@@ -15,12 +15,16 @@ class LMVirtualControllerView : UIView {
     var bumperTriggerButtonDelegate: BumperTriggerButtonDelegate?
     var leftThumbstickViewDelegate, rightThumbstickViewDelegate: ThumbstickViewDelegate?
     
-    var aButton, bButton, xButton, yButton: ABXYButton!
-    var leftButton, downButton, upButton, rightButton: LDURButton!
     var selectButton, startButton: SelectStartButton!
     var lButton, zlButton, rButton, zrButton: BumperTriggerButton!
     
     var leftThumbstickView, rightThumbstickView: ThumbstickView!
+    
+    var leftPadView: LeftPadView!
+    var rightPadView: RightPadView!
+    
+    var portraitSelectConstraint, portraitStartConstraint: NSLayoutConstraint!
+    var landscapeSelectConstraint, landscapeStartConstraint: NSLayoutConstraint!
     
     enum State {
         case activated, deactivated
@@ -38,17 +42,75 @@ class LMVirtualControllerView : UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         
-        //let swipeDown = UISwipeGestureRecognizer(target: self, action: #selector(hideBumpersTriggers))
-        //swipeDown.direction = .down
-        //addGestureRecognizer(swipeDown)
+        leftPadView = .init()
+        leftPadView.delegate = self
+        addSubview(leftPadView)
         
-        //let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(showBumpersTriggers))
-        //swipeUp.direction = .up
-        //addGestureRecognizer(swipeUp)
+        rightPadView = .init()
+        rightPadView.delegate = self
+        addSubview(rightPadView)
+        
+        addConstraints([
+            leftPadView.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant: 20),
+            leftPadView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -20),
+            
+            rightPadView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -20),
+            rightPadView.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor, constant: -20)
+        ])
+        
+        NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: .main) { _ in
+            if UIDevice.current.orientation == .portrait {
+                self.removeConstraints([self.landscapeSelectConstraint, self.landscapeStartConstraint])
+                self.addConstraints([self.portraitSelectConstraint, self.portraitStartConstraint])
+            } else {
+                self.removeConstraints([self.portraitSelectConstraint, self.portraitStartConstraint])
+                self.addConstraints([self.landscapeSelectConstraint, self.landscapeStartConstraint])
+            }
+            
+            self.setNeedsUpdateConstraints()
+        }
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        state == .activated ? super.hitTest(point, with: event) == self ? nil : super.hitTest(point, with: event) : nil
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesBegan(touches, with: event)
+        guard state == .activated, let selectStartButtonDelegate, let bumperTriggerButtonDelegate, let touch = touches.first else {
+            return
+        }
+        
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        
+        switch touch.view {
+        case selectButton, startButton:
+            selectStartButtonDelegate.touch((touch.view as! SelectStartButton).buttonType, .down)
+        case lButton, zlButton, rButton, zrButton:
+            bumperTriggerButtonDelegate.touch((touch.view as! BumperTriggerButton).buttonType, .down)
+        default:
+            break
+        }
+    }
+    
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesEnded(touches, with: event)
+        guard state == .activated, let selectStartButtonDelegate, let bumperTriggerButtonDelegate, let touch = touches.first else {
+            return
+        }
+        
+        switch touch.view {
+        case selectButton, startButton:
+            selectStartButtonDelegate.touch((touch.view as! SelectStartButton).buttonType, .up)
+        case lButton, zlButton, rButton, zrButton:
+            bumperTriggerButtonDelegate.touch((touch.view as! BumperTriggerButton).buttonType, .up)
+        default:
+            break
+        }
     }
     
     
@@ -60,7 +122,7 @@ class LMVirtualControllerView : UIView {
             rButton.letterImageView.addSymbolEffect(.disappear)
             zrButton.letterImageView.addSymbolEffect(.disappear)
         } else {
-            UIView.animate(withDuration: 0.2) {
+            UIView.animate(withDuration: 0.1) {
                 self.lButton.alpha = 0
                 self.zlButton.alpha = 0
                 self.rButton.alpha = 0
@@ -82,7 +144,7 @@ class LMVirtualControllerView : UIView {
             rButton.letterImageView.addSymbolEffect(.appear)
             zrButton.letterImageView.addSymbolEffect(.appear)
         } else {
-            UIView.animate(withDuration: 0.2) {
+            UIView.animate(withDuration: 0.1) {
                 self.lButton.alpha = 1
                 self.zlButton.alpha = 1
                 self.rButton.alpha = 1
@@ -97,123 +159,20 @@ class LMVirtualControllerView : UIView {
     }
     
     
-    func addAButton() {
-        aButton = .init(.a)
-        aButton.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(aButton)
-        
-        addConstraints([
-            aButton.widthAnchor.constraint(equalToConstant: 50),
-            aButton.heightAnchor.constraint(equalToConstant: 50),
-            aButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -88),
-            aButton.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor, constant: -20)
-        ])
-    }
-    
-    func addBButton() {
-        bButton = .init(.b)
-        bButton.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(bButton)
-        
-        addConstraints([
-            bButton.widthAnchor.constraint(equalToConstant: 50),
-            bButton.heightAnchor.constraint(equalToConstant: 50),
-            bButton.topAnchor.constraint(equalTo: aButton.safeAreaLayoutGuide.bottomAnchor),
-            bButton.trailingAnchor.constraint(equalTo: aButton.safeAreaLayoutGuide.leadingAnchor)
-        ])
-    }
-    
-    func addXButton() {
-        xButton = .init(.x)
-        xButton.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(xButton)
-        
-        addConstraints([
-            xButton.widthAnchor.constraint(equalToConstant: 50),
-            xButton.heightAnchor.constraint(equalToConstant: 50),
-            xButton.bottomAnchor.constraint(equalTo: aButton.safeAreaLayoutGuide.topAnchor),
-            xButton.trailingAnchor.constraint(equalTo: aButton.safeAreaLayoutGuide.leadingAnchor)
-        ])
-    }
-    
-    func addYButton() {
-        yButton = .init(.y)
-        yButton.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(yButton)
-        
-        addConstraints([
-            yButton.widthAnchor.constraint(equalToConstant: 50),
-            yButton.heightAnchor.constraint(equalToConstant: 50),
-            yButton.topAnchor.constraint(equalTo: aButton.safeAreaLayoutGuide.topAnchor),
-            yButton.trailingAnchor.constraint(equalTo: xButton.safeAreaLayoutGuide.leadingAnchor)
-        ])
-    }
-    
-    
-    func addLeftButton() {
-        leftButton = .init(.left)
-        leftButton.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(leftButton)
-        
-        addConstraints([
-            leftButton.widthAnchor.constraint(equalToConstant: 50),
-            leftButton.heightAnchor.constraint(equalToConstant: 50),
-            leftButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -88),
-            leftButton.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant: 20)
-        ])
-    }
-    
-    func addDownButton() {
-        downButton = .init(.down)
-        downButton.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(downButton)
-        
-        addConstraints([
-            downButton.widthAnchor.constraint(equalToConstant: 50),
-            downButton.heightAnchor.constraint(equalToConstant: 50),
-            downButton.topAnchor.constraint(equalTo: leftButton.safeAreaLayoutGuide.bottomAnchor),
-            downButton.leadingAnchor.constraint(equalTo: leftButton.safeAreaLayoutGuide.trailingAnchor)
-        ])
-    }
-    
-    func addUpButton() {
-        upButton = .init(.up)
-        upButton.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(upButton)
-        
-        addConstraints([
-            upButton.widthAnchor.constraint(equalToConstant: 50),
-            upButton.heightAnchor.constraint(equalToConstant: 50),
-            upButton.bottomAnchor.constraint(equalTo: leftButton.safeAreaLayoutGuide.topAnchor),
-            upButton.leadingAnchor.constraint(equalTo: leftButton.safeAreaLayoutGuide.trailingAnchor)
-        ])
-    }
-    
-    func addRightButton() {
-        rightButton = .init(.right)
-        rightButton.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(rightButton)
-        
-        addConstraints([
-            rightButton.widthAnchor.constraint(equalToConstant: 50),
-            rightButton.heightAnchor.constraint(equalToConstant: 50),
-            rightButton.topAnchor.constraint(equalTo: leftButton.safeAreaLayoutGuide.topAnchor),
-            rightButton.leadingAnchor.constraint(equalTo: upButton.safeAreaLayoutGuide.trailingAnchor)
-        ])
-    }
-    
-    
     func addSelectButton() {
         selectButton = .init(.select)
         selectButton.translatesAutoresizingMaskIntoConstraints = false
         addSubview(selectButton)
         
+        portraitSelectConstraint = selectButton.trailingAnchor.constraint(equalTo: leftPadView.trailingAnchor, constant: 10)
+        landscapeSelectConstraint = selectButton.leadingAnchor.constraint(equalTo: leftPadView.trailingAnchor)
+        
         addConstraints([
             selectButton.widthAnchor.constraint(equalToConstant: 40),
             selectButton.heightAnchor.constraint(equalToConstant: 40),
-            selectButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -20),
-            // selectButton.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.centerXAnchor, constant: -10)
-            selectButton.leadingAnchor.constraint(equalTo: downButton.trailingAnchor, constant: 10)
+            
+            selectButton.bottomAnchor.constraint(equalTo: leftPadView.bottomAnchor),
+            portraitSelectConstraint
         ])
     }
     
@@ -222,12 +181,15 @@ class LMVirtualControllerView : UIView {
         startButton.translatesAutoresizingMaskIntoConstraints = false
         addSubview(startButton)
         
+        portraitStartConstraint = startButton.leadingAnchor.constraint(equalTo: rightPadView.leadingAnchor, constant: -10)
+        landscapeStartConstraint = startButton.trailingAnchor.constraint(equalTo: rightPadView.leadingAnchor)
+        
         addConstraints([
             startButton.widthAnchor.constraint(equalToConstant: 40),
             startButton.heightAnchor.constraint(equalToConstant: 40),
-            startButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -20),
-            // startButton.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.centerXAnchor, constant: 10)
-            startButton.trailingAnchor.constraint(equalTo: bButton.leadingAnchor, constant: -10)
+            
+            portraitStartConstraint,
+            startButton.bottomAnchor.constraint(equalTo: rightPadView.bottomAnchor)
         ])
     }
     
@@ -240,8 +202,8 @@ class LMVirtualControllerView : UIView {
         addConstraints([
             lButton.widthAnchor.constraint(equalToConstant: 56),
             lButton.heightAnchor.constraint(equalToConstant: 48),
-            lButton.bottomAnchor.constraint(equalTo: upButton.safeAreaLayoutGuide.topAnchor, constant: -20),
-            lButton.leadingAnchor.constraint(equalTo: leftButton.safeAreaLayoutGuide.leadingAnchor)
+            lButton.bottomAnchor.constraint(equalTo: leftPadView.topAnchor, constant: -20),
+            lButton.leadingAnchor.constraint(equalTo: leftPadView.leadingAnchor)
         ])
     }
     
@@ -266,8 +228,8 @@ class LMVirtualControllerView : UIView {
         addConstraints([
             rButton.widthAnchor.constraint(equalToConstant: 56),
             rButton.heightAnchor.constraint(equalToConstant: 48),
-            rButton.bottomAnchor.constraint(equalTo: xButton.safeAreaLayoutGuide.topAnchor, constant: -20),
-            rButton.trailingAnchor.constraint(equalTo: aButton.safeAreaLayoutGuide.trailingAnchor)
+            rButton.bottomAnchor.constraint(equalTo: rightPadView.topAnchor, constant: -20),
+            rButton.trailingAnchor.constraint(equalTo: rightPadView.trailingAnchor)
         ])
     }
     
@@ -290,13 +252,13 @@ class LMVirtualControllerView : UIView {
         leftThumbstickView.translatesAutoresizingMaskIntoConstraints = false
         leftThumbstickView.delegate = leftThumbstickViewDelegate
         addSubview(leftThumbstickView)
-        insertSubview(leftThumbstickView, belowSubview: leftButton)
+        insertSubview(leftThumbstickView, belowSubview: leftPadView)
         
         addConstraints([
-            leftThumbstickView.topAnchor.constraint(equalTo: upButton.topAnchor),
-            leftThumbstickView.leadingAnchor.constraint(equalTo: leftButton.leadingAnchor),
-            leftThumbstickView.bottomAnchor.constraint(equalTo: downButton.bottomAnchor),
-            leftThumbstickView.trailingAnchor.constraint(equalTo: rightButton.trailingAnchor)
+            leftThumbstickView.topAnchor.constraint(equalTo: leftPadView.topAnchor),
+            leftThumbstickView.leadingAnchor.constraint(equalTo: leftPadView.leadingAnchor),
+            leftThumbstickView.bottomAnchor.constraint(equalTo: leftPadView.bottomAnchor),
+            leftThumbstickView.trailingAnchor.constraint(equalTo: leftPadView.trailingAnchor)
         ])
     }
     
@@ -305,164 +267,51 @@ class LMVirtualControllerView : UIView {
         rightThumbstickView.translatesAutoresizingMaskIntoConstraints = false
         rightThumbstickView.delegate = rightThumbstickViewDelegate
         addSubview(rightThumbstickView)
-        insertSubview(rightThumbstickView, belowSubview: aButton)
+        insertSubview(rightThumbstickView, belowSubview: rightPadView)
         
         addConstraints([
-            rightThumbstickView.topAnchor.constraint(equalTo: xButton.topAnchor),
-            rightThumbstickView.leadingAnchor.constraint(equalTo: yButton.leadingAnchor),
-            rightThumbstickView.bottomAnchor.constraint(equalTo: bButton.bottomAnchor),
-            rightThumbstickView.trailingAnchor.constraint(equalTo: aButton.trailingAnchor)
+            rightThumbstickView.topAnchor.constraint(equalTo: rightPadView.topAnchor),
+            rightThumbstickView.leadingAnchor.constraint(equalTo: rightPadView.leadingAnchor),
+            rightThumbstickView.bottomAnchor.constraint(equalTo: rightPadView.bottomAnchor),
+            rightThumbstickView.trailingAnchor.constraint(equalTo: rightPadView.trailingAnchor)
         ])
     }
     
     
-    func hide() {
-        state = .deactivated
-        
-        if #available(iOS 17, *) {
-            aButton.letterImageView.addSymbolEffect(.disappear)
-            bButton.letterImageView.addSymbolEffect(.disappear)
-            xButton.letterImageView.addSymbolEffect(.disappear)
-            yButton.letterImageView.addSymbolEffect(.disappear)
-            
-            leftButton.letterImageView.addSymbolEffect(.disappear)
-            downButton.letterImageView.addSymbolEffect(.disappear)
-            upButton.letterImageView.addSymbolEffect(.disappear)
-            rightButton.letterImageView.addSymbolEffect(.disappear)
-            
-            selectButton.letterImageView.addSymbolEffect(.disappear)
-            startButton.letterImageView.addSymbolEffect(.disappear)
-            
-            lButton.letterImageView.addSymbolEffect(.disappear)
-            zlButton.letterImageView.addSymbolEffect(.disappear)
-            rButton.letterImageView.addSymbolEffect(.disappear)
-            zrButton.letterImageView.addSymbolEffect(.disappear)
-        } else {
-            UIView.animate(withDuration: 0.2) {
-                self.aButton.alpha = 0
-                self.bButton.alpha = 0
-                self.xButton.alpha = 0
-                self.yButton.alpha = 0
-                
-                self.leftButton.alpha = 0
-                self.downButton.alpha = 0
-                self.upButton.alpha = 0
-                self.rightButton.alpha = 0
-                
-                self.selectButton.alpha = 0
-                self.startButton.alpha = 0
-                
-                self.lButton.alpha = 0
-                self.zlButton.alpha = 0
-                self.rButton.alpha = 0
-                self.zrButton.alpha = 0
-            }
+    func hideLeftPadView() {
+        leftPadView.hide()
+        UIView.animate(withDuration: 0.1) {
+            self.leftThumbstickView.backgroundColor = .systemGray.withAlphaComponent(0.66)
         }
     }
     
-    func show() {
-        state = .activated
-        
-        if #available(iOS 17, *) {
-            aButton.letterImageView.addSymbolEffect(.appear)
-            bButton.letterImageView.addSymbolEffect(.appear)
-            xButton.letterImageView.addSymbolEffect(.appear)
-            yButton.letterImageView.addSymbolEffect(.appear)
-            
-            leftButton.letterImageView.addSymbolEffect(.appear)
-            downButton.letterImageView.addSymbolEffect(.appear)
-            upButton.letterImageView.addSymbolEffect(.appear)
-            rightButton.letterImageView.addSymbolEffect(.appear)
-            
-            selectButton.letterImageView.addSymbolEffect(.appear)
-            startButton.letterImageView.addSymbolEffect(.appear)
-            
-            lButton.letterImageView.addSymbolEffect(.appear)
-            zlButton.letterImageView.addSymbolEffect(.appear)
-            rButton.letterImageView.addSymbolEffect(.appear)
-            zrButton.letterImageView.addSymbolEffect(.appear)
-        } else {
-            UIView.animate(withDuration: 0.2) {
-                self.aButton.alpha = 1
-                self.bButton.alpha = 1
-                self.xButton.alpha = 1
-                self.yButton.alpha = 1
-                
-                self.leftButton.alpha = 1
-                self.downButton.alpha = 1
-                self.upButton.alpha = 1
-                self.rightButton.alpha = 1
-                
-                self.selectButton.alpha = 1
-                self.startButton.alpha = 1
-                
-                self.lButton.alpha = 1
-                self.zlButton.alpha = 1
-                self.rButton.alpha = 1
-                self.zrButton.alpha = 1
-            }
+    func showLeftPadView() {
+        leftPadView.show()
+        UIView.animate(withDuration: 0.1) {
+            self.leftThumbstickView.backgroundColor = nil
         }
     }
     
-    
-    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        state == .activated ? super.hitTest(point, with: event) == self ? nil : super.hitTest(point, with: event) : nil
-    }
-    
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        super.touchesBegan(touches, with: event)
-        guard state == .activated, let abxyButtonDelegate, let ldurButtonDelegate, let selectStartButtonDelegate, let bumperTriggerButtonDelegate, let touch = touches.first else {
-            return
-        }
-        
-        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-        
-        switch touch.view {
-        case aButton, bButton, xButton, yButton:
-            abxyButtonDelegate.touch((touch.view as! ABXYButton).buttonType, .down)
-        case leftButton, downButton, upButton, rightButton:
-            ldurButtonDelegate.touch((touch.view as! LDURButton).buttonType, .down)
-        case selectButton, startButton:
-            selectStartButtonDelegate.touch((touch.view as! SelectStartButton).buttonType, .down)
-        case lButton, zlButton, rButton, zrButton:
-            bumperTriggerButtonDelegate.touch((touch.view as! BumperTriggerButton).buttonType, .down)
-        default:
-            break
+    func hideRightPadView() {
+        rightPadView.hide()
+        UIView.animate(withDuration: 0.1) {
+            self.rightThumbstickView.backgroundColor = .systemGray.withAlphaComponent(0.66)
         }
     }
     
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        super.touchesEnded(touches, with: event)
-        guard state == .activated, let abxyButtonDelegate, let ldurButtonDelegate, let selectStartButtonDelegate, let bumperTriggerButtonDelegate, let touch = touches.first else {
-            return
-        }
-        
-        switch touch.view {
-        case aButton, bButton, xButton, yButton:
-            abxyButtonDelegate.touch((touch.view as! ABXYButton).buttonType, .up)
-        case leftButton, downButton, upButton, rightButton:
-            ldurButtonDelegate.touch((touch.view as! LDURButton).buttonType, .up)
-        case selectButton, startButton:
-            selectStartButtonDelegate.touch((touch.view as! SelectStartButton).buttonType, .up)
-        case lButton, zlButton, rButton, zrButton:
-            bumperTriggerButtonDelegate.touch((touch.view as! BumperTriggerButton).buttonType, .up)
-        default:
-            break
+    func showRightPadView() {
+        rightPadView.show()
+        UIView.animate(withDuration: 0.1) {
+            self.rightThumbstickView.backgroundColor = nil
         }
     }
+    
     
     func filled() {
         appearance = .filled
         
-        aButton.filled()
-        bButton.filled()
-        xButton.filled()
-        yButton.filled()
-        
-        leftButton.filled()
-        downButton.filled()
-        upButton.filled()
-        rightButton.filled()
+        leftPadView.filled()
+        rightPadView.filled()
         
         selectButton.filled()
         startButton.filled()
@@ -476,15 +325,8 @@ class LMVirtualControllerView : UIView {
     func tinted() {
         appearance = .tinted
         
-        aButton.tinted()
-        bButton.tinted()
-        xButton.tinted()
-        yButton.tinted()
-        
-        leftButton.tinted()
-        downButton.tinted()
-        upButton.tinted()
-        rightButton.tinted()
+        leftPadView.tinted()
+        rightPadView.tinted()
         
         selectButton.tinted()
         startButton.tinted()
@@ -496,16 +338,6 @@ class LMVirtualControllerView : UIView {
     }
     
     func addAllButtons() {
-        addAButton()
-        addBButton()
-        addXButton()
-        addYButton()
-        
-        addLeftButton()
-        addDownButton()
-        addUpButton()
-        addRightButton()
-        
         addSelectButton()
         addStartButton()
         
@@ -516,5 +348,81 @@ class LMVirtualControllerView : UIView {
         
         addLeftThumbstickView()
         addRightThumbstickView()
+    }
+    
+    
+    func physicalControllerDidConnect() {
+        state = .deactivated
+        
+        leftPadView.hide()
+        rightPadView.hide()
+        
+        if #available(iOS 17, *) {
+            selectButton.letterImageView.addSymbolEffect(.disappear)
+            startButton.letterImageView.addSymbolEffect(.disappear)
+            
+            lButton.letterImageView.addSymbolEffect(.disappear)
+            zlButton.letterImageView.addSymbolEffect(.disappear)
+            rButton.letterImageView.addSymbolEffect(.disappear)
+            zrButton.letterImageView.addSymbolEffect(.disappear)
+        } else {
+            UIView.animate(withDuration: 0.1) {
+                self.selectButton.alpha = 0
+                self.startButton.alpha = 0
+                
+                self.lButton.alpha = 0
+                self.zlButton.alpha = 0
+                self.rButton.alpha = 0
+                self.zrButton.alpha = 0
+            }
+        }
+    }
+    
+    func physicalControllerDidDisconnect() {
+        state = .activated
+        
+        leftPadView.show()
+        rightPadView.show()
+        
+        if #available(iOS 17, *) {
+            selectButton.letterImageView.addSymbolEffect(.appear)
+            startButton.letterImageView.addSymbolEffect(.appear)
+            
+            lButton.letterImageView.addSymbolEffect(.appear)
+            zlButton.letterImageView.addSymbolEffect(.appear)
+            rButton.letterImageView.addSymbolEffect(.appear)
+            zrButton.letterImageView.addSymbolEffect(.appear)
+        } else {
+            UIView.animate(withDuration: 0.1) {
+                self.selectButton.alpha = 1
+                self.startButton.alpha = 1
+                
+                self.lButton.alpha = 1
+                self.zlButton.alpha = 1
+                self.rButton.alpha = 1
+                self.zrButton.alpha = 1
+            }
+        }
+    }
+}
+
+
+extension LMVirtualControllerView : LDURButtonDelegate {
+    func touch(_ buttonType: LDURButton.ButtonType, _ touchType: TouchType) {
+        guard let ldurButtonDelegate else {
+            return
+        }
+        
+        ldurButtonDelegate.touch(buttonType, touchType)
+    }
+}
+
+extension LMVirtualControllerView : ABXYButtonDelegate {
+    func touch(_ buttonType: ABXYButton.ButtonType, _ touchType: TouchType) {
+        guard let abxyButtonDelegate else {
+            return
+        }
+        
+        abxyButtonDelegate.touch(buttonType, touchType)
     }
 }

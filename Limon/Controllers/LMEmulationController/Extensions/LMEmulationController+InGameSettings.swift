@@ -99,10 +99,47 @@ extension LMEmulationController {
             ]
         }
         
-        return .init(title: "Screen Layout", children: children())
+        return .init(title: "Screen Layout", image: .init(systemName: "rectangle.3.group.fill"), children: children())
     }
     
     fileprivate func statesSubmenu() -> UIMenu {
+        func children() -> [UIMenuElement] {
+            func children() -> [UIMenuElement] {
+                let states: [(title: String, systemName: String, handler: UIActionHandler)] = [
+                    (title: "Load State", systemName: "arrow.up.doc.fill", handler: { _ in
+                        let alertController = UIAlertController(title: "Save States", message: "Choose a save state to attempt to load it", preferredStyle: .actionSheet)
+                        self.citra().saveStates().forEach { saveState in
+                            if let saveState = saveState as? LMSaveState {
+                                alertController.addAction(.init(title: saveState.title, style: .default, handler: { _ in
+                                    self.citra().load(saveState.url)
+                                    self.citra().prepareForLoad()
+                                }))
+                            }
+                        }
+                        alertController.addAction(.init(title: "Cancel", style: .cancel))
+                        self.present(alertController, animated: true)
+                    }),
+                    (title: "Save State", systemName: "arrow.down.doc.fill", handler: { _ in
+                        DispatchQueue.main.async {
+                            self.citra().prepareForSave()
+                        }
+                    })
+                ]
+                
+                return states.reduce(into: [UIAction](), { partialResult, state in
+                    partialResult.append(.init(title: state.title, image: .init(systemName: state.systemName), handler: state.handler))
+                })
+            }
+            
+            return [
+                UIMenu(options: .displayInline, preferredElementSize: .medium, children: children())
+            ]
+        }
+        
+        return .init(title: "States", image: .init(systemName: "internaldrive.fill"), children: children())
+    }
+    
+    fileprivate func emulationStatesSubmenu() -> UIMenu {
         func children() -> [UIMenuElement] {
             let states: [(title: String, systemName: String, attributes: UIMenuElement.Attributes, handler: UIActionHandler)] = [
                 (title: "Pause", systemName: "pause.fill", attributes: self.citra().isPaused() ? [.disabled] : [], handler: { _ in
@@ -128,6 +165,6 @@ extension LMEmulationController {
     }
     
     func inGameSettingsMenu() -> UIMenu {
-        .init(children: [appearanceSubmenu(), multiplayerSubmenu(), screenLayoutsSubmenu(), statesSubmenu()])
+        .init(children: [appearanceSubmenu(), multiplayerSubmenu(), screenLayoutsSubmenu(), statesSubmenu(), emulationStatesSubmenu()])
     }
 }

@@ -89,8 +89,7 @@ private:
      * Compiles a `MUL src1, src2` operation, properly handling the PICA semantics when multiplying
      * zero by inf. Clobbers `src2` and `scratch`.
      */
-    void Compile_SanitizedMul(oaknut::QReg src1, oaknut::QReg src2, oaknut::QReg scratch0,
-                              oaknut::QReg scratch1);
+    void Compile_SanitizedMul(oaknut::QReg src1, oaknut::QReg src2, oaknut::QReg scratch0);
 
     void Compile_EvaluateCondition(Instruction instr);
     void Compile_UniformCondition(Instruction instr);

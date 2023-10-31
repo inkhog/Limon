@@ -36,10 +36,10 @@ extension LMEmulationController {
         extendedGamepad.leftThumbstick.valueChangedHandler = EmulationInput.leftThumbstick.valueChangedHandler
         extendedGamepad.rightThumbstick.valueChangedHandler = EmulationInput.rightThumstick.valueChangedHandler
         
-        virtualControllerView.hide()
+        virtualControllerView.physicalControllerDidConnect()
     }
     
     func physicalControllerDidDisconnect(_ notification: Notification) {
-        virtualControllerView.show()
+        virtualControllerView.physicalControllerDidDisconnect()
     }
 }

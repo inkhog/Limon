@@ -1,9 +1,6 @@
-//
-//  shader_jit_a64_compiler.cpp
-//  Limon
-//
-//  Created by Jarrod Norwell on 10/21/23.
-//
+// Copyright 2023 Citra Emulator Project
+// Licensed under GPLv2 or any later version
+// Refer to the license.txt file included.
 
 #include "common/arch.h"
 #if CITRA_ARCH(arm64)
@@ -34,7 +31,7 @@ namespace Pica::Shader {
 
 typedef void (JitShader::*JitFunction)(Instruction instr);
 
-const JitFunction instr_table[64] = {
+const std::array<JitFunction, 64> instr_table = {
     &JitShader::Compile_ADD,    // add
     &JitShader::Compile_DP3,    // dp3
     &JitShader::Compile_DP4,    // dp4
@@ -101,10 +98,7 @@ const JitFunction instr_table[64] = {
     &JitShader::Compile_MAD,    // mad
 };
 
-// The following is used to alias some commonly used registers. Generally, RAX-RDX and QReg0-QReg3
-// can be used as scratch registers within a compiler function. The other registers have designated
-// purposes, as documented below:
-
+// The following is used to alias some commonly used registers:
 /// Pointer to the uniform memory
 constexpr XReg UNIFORMS = X9;
 /// The two 32-bit VS address offset registers set by the MOVA instruction
@@ -139,22 +133,17 @@ constexpr QReg ONE = Q14;
 
 // State registers that must not be modified by external functions calls
 // Scratch registers, e.g., SRC1 and VSCRATCH0, have to be saved on the side if needed
-static const std::bitset<64> persistent_regs = BuildRegSet({
-    // Pointers to register blocks
-    UNIFORMS,
-    STATE,
-    // Cached registers
-    ADDROFFS_REG_0,
-    ADDROFFS_REG_1,
-    LOOPCOUNT_REG,
-    COND0,
-    COND1,
-    // Constants
-    ONE,
-    // Loop variables
-    LOOPCOUNT,
-    LOOPINC,
-});
+static const std::bitset<64> persistent_regs =
+    BuildRegSet({// Pointers to register blocks
+                 UNIFORMS, STATE,
+                 // Cached registers
+                 ADDROFFS_REG_0, ADDROFFS_REG_1, LOOPCOUNT_REG, COND0, COND1,
+                 // Constants
+                 ONE,
+                 // Loop variables
+                 LOOPCOUNT, LOOPINC,
+                 // Link Register
+                 X30});
 
 /// Raw constant for the source register selector that indicates no swizzling is performed
 static const u8 NO_SRC_REG_SWIZZLE = 0x1b;
@@ -196,7 +185,7 @@ void JitShader::Compile_SwizzleSrc(Instruction instr, unsigned src_num, SourceRe
         break;
     }
 
-    s32 src_offset_disp = (s32)src_offset;
+    const s32 src_offset_disp = static_cast<s32>(src_offset);
     ASSERT_MSG(src_offset == static_cast<std::size_t>(src_offset_disp),
                "Source register offset too large for int type");
 
@@ -264,16 +253,17 @@ void JitShader::Compile_SwizzleSrc(Instruction instr, unsigned src_num, SourceRe
         LDR(dest, src_ptr, src_offset_disp);
     }
 
-    SwizzlePattern swiz = {(*swizzle_data)[operand_desc_id]};
+    const SwizzlePattern swiz = {(*swizzle_data)[operand_desc_id]};
 
     // Generate instructions for source register swizzling as needed
     u8 sel = swiz.GetRawSelector(src_num);
     if (sel != NO_SRC_REG_SWIZZLE) {
-        // Selector component order needs to be reversed for the SHUFPS instruction
-        sel = ((sel & 0xc0) >> 6) | ((sel & 3) << 6) | ((sel & 0xc) << 2) | ((sel & 0x30) >> 2);
-
-        const int table[] = {((sel & 0xc0) >> 6), ((sel & 0x03) << 6), ((sel & 0x0c) << 2),
-                             ((sel & 0x30) >> 2)};
+        const int table[] = {
+            ((sel & 0b11'00'00'00) >> 6),
+            ((sel & 0b00'11'00'00) >> 4),
+            ((sel & 0b00'00'11'00) >> 2),
+            ((sel & 0b00'00'00'11) >> 0),
+        };
 
         // Generate table-vector
         MOV(XSCRATCH0.toW(), u32(0x03'02'01'00u + (table[0] * 0x04'04'04'04u)));
@@ -336,28 +326,44 @@ void JitShader::Compile_DestEnable(Instruction instr, QReg src) {
         // register...
         LDR(VSCRATCH0, STATE, dest_offset_disp);
 
-        const u32 mask = ((swiz.dest_mask & 1) ? 0xFF'00'00'00 : 0) |
-                         ((swiz.dest_mask & 2) ? 0x00'FF'00'00 : 0) |
-                         ((swiz.dest_mask & 4) ? 0x00'00'FF'00 : 0) |
-                         ((swiz.dest_mask & 8) ? 0x00'00'00'FF : 0);
+        // MOVI encodes a 64-bit value into an 8-bit immidiate by replicating bits
+        // The 8-bit immediate "a:b:c:d:e:f:g:h" maps to the 64-bit value:
+        // "aaaaaaaabbbbbbbbccccccccddddddddeeeeeeeeffffffffgggggggghhhhhhhh"
+        if (((swiz.dest_mask & 0b1100) >> 2) == (swiz.dest_mask & 0b11)) {
+            // Upper/Lower halfs are the same bit-pattern, broadcast the same mask to both
+            // 64-bit lanes
+            const u8 rep_imm = ((swiz.dest_mask & 4) ? 0b11'11'00'00 : 0) |
+                               ((swiz.dest_mask & 8) ? 0b00'00'11'11 : 0);
 
-        MOV(XSCRATCH0.toW(), mask);
-        MOV(VSCRATCH2.Selem()[0], XSCRATCH0.toW());
+            MOVI(VSCRATCH2.D2(), RepImm(rep_imm));
+        } else if ((swiz.dest_mask & 0b0011) == 0) {
+            // Upper elements are zero, create the final mask in the 64-bit lane
+            const u8 rep_imm = ((swiz.dest_mask & 4) ? 0b11'11'00'00 : 0) |
+                               ((swiz.dest_mask & 8) ? 0b00'00'11'11 : 0);
 
-        // Widen 8->16
-        ZIP1(VSCRATCH2.B16(), VSCRATCH2.B16(), VSCRATCH2.B16());
-        // Widen 16->32
-        ZIP1(VSCRATCH2.H8(), VSCRATCH2.H8(), VSCRATCH2.H8());
+            MOVI(VSCRATCH2.toD(), RepImm(rep_imm));
+        } else {
+            // Create a 64-bit mask and widen it to 32-bits
+            const u8 rep_imm = ((swiz.dest_mask & 1) ? 0b11'00'00'00 : 0) |
+                               ((swiz.dest_mask & 2) ? 0b00'11'00'00 : 0) |
+                               ((swiz.dest_mask & 4) ? 0b00'00'11'00 : 0) |
+                               ((swiz.dest_mask & 8) ? 0b00'00'00'11 : 0);
+
+            MOVI(VSCRATCH2.toD(), RepImm(rep_imm));
+
+            // Widen 16->32
+            ZIP1(VSCRATCH2.H8(), VSCRATCH2.H8(), VSCRATCH2.H8());
+        }
 
         // Select between src and dst using mask
-        BSL(VSCRATCH2.B16(), VSCRATCH0.B16(), src.B16());
+        BSL(VSCRATCH2.B16(), src.B16(), VSCRATCH0.B16());
 
         // Store dest back to memory
         STR(VSCRATCH2, STATE, dest_offset_disp);
     }
 }
 
-void JitShader::Compile_SanitizedMul(QReg src1, QReg src2, QReg scratch0, QReg scratch1) {
+void JitShader::Compile_SanitizedMul(QReg src1, QReg src2, QReg scratch0) {
     // 0 * inf and inf * 0 in the PICA should return 0 instead of NaN. This can be implemented by
     // checking for NaNs before and after the multiplication.  If the multiplication result is NaN
     // where neither source was, this NaN was generated by a 0 * inf multiplication, and so the
@@ -421,7 +427,7 @@ void JitShader::Compile_DP3(Instruction instr) {
     Compile_SwizzleSrc(instr, 1, instr.common.src1, SRC1);
     Compile_SwizzleSrc(instr, 2, instr.common.src2, SRC2);
 
-    Compile_SanitizedMul(SRC1, SRC2, VSCRATCH0, VSCRATCH1);
+    Compile_SanitizedMul(SRC1, SRC2, VSCRATCH0);
 
     // Set last element to 0.0
     MOV(SRC1.Selem()[3], WZR);
@@ -437,7 +443,7 @@ void JitShader::Compile_DP4(Instruction instr) {
     Compile_SwizzleSrc(instr, 1, instr.common.src1, SRC1);
     Compile_SwizzleSrc(instr, 2, instr.common.src2, SRC2);
 
-    Compile_SanitizedMul(SRC1, SRC2, VSCRATCH0, VSCRATCH1);
+    Compile_SanitizedMul(SRC1, SRC2, VSCRATCH0);
 
     FADDP(SRC1.S4(), SRC1.S4(), SRC1.S4());
     FADDP(SRC1.toS(), SRC1.toD().S2());
@@ -458,7 +464,7 @@ void JitShader::Compile_DPH(Instruction instr) {
     // Set 4th component to 1.0
     MOV(SRC1.Selem()[3], ONE.Selem()[0]);
 
-    Compile_SanitizedMul(SRC1, SRC2, VSCRATCH0, VSCRATCH1);
+    Compile_SanitizedMul(SRC1, SRC2, VSCRATCH0);
 
     FADDP(SRC1.S4(), SRC1.S4(), SRC1.S4());
     FADDP(SRC1.toS(), SRC1.toD().S2());
@@ -469,20 +475,24 @@ void JitShader::Compile_DPH(Instruction instr) {
 
 void JitShader::Compile_EX2(Instruction instr) {
     Compile_SwizzleSrc(instr, 1, instr.common.src1, SRC1);
+    STR(X30, SP, POST_INDEXED, -16);
     BL(exp2_subroutine);
+    LDR(X30, SP, PRE_INDEXED, 16);
     Compile_DestEnable(instr, SRC1);
 }
 
 void JitShader::Compile_LG2(Instruction instr) {
     Compile_SwizzleSrc(instr, 1, instr.common.src1, SRC1);
+    STR(X30, SP, POST_INDEXED, -16);
     BL(log2_subroutine);
+    LDR(X30, SP, PRE_INDEXED, 16);
     Compile_DestEnable(instr, SRC1);
 }
 
 void JitShader::Compile_MUL(Instruction instr) {
     Compile_SwizzleSrc(instr, 1, instr.common.src1, SRC1);
     Compile_SwizzleSrc(instr, 2, instr.common.src2, SRC2);
-    Compile_SanitizedMul(SRC1, SRC2, VSCRATCH0, VSCRATCH1);
+    Compile_SanitizedMul(SRC1, SRC2, VSCRATCH0);
     Compile_DestEnable(instr, SRC1);
 }
 
@@ -526,11 +536,10 @@ void JitShader::Compile_MAX(Instruction instr) {
     Compile_SwizzleSrc(instr, 1, instr.common.src1, SRC1);
     Compile_SwizzleSrc(instr, 2, instr.common.src2, SRC2);
 
-    // VSCRATCH0 = Ordinal(SRC1, SRC2)
+    // VSCRATCH0 = Ordinal(SRC1)
     FCMEQ(VSCRATCH0.S4(), SRC1.S4(), SRC1.S4());
-    FCMEQ(VSCRATCH1.S4(), SRC2.S4(), SRC2.S4());
-    AND(VSCRATCH0.B16(), VSCRATCH0.B16(), VSCRATCH1.B16());
 
+    // FMAX will always pick the NaN
     FMAX(SRC1.S4(), SRC1.S4(), SRC2.S4());
 
     // In the case of NaN, pick SRC2
@@ -543,11 +552,10 @@ void JitShader::Compile_MIN(Instruction instr) {
     Compile_SwizzleSrc(instr, 1, instr.common.src1, SRC1);
     Compile_SwizzleSrc(instr, 2, instr.common.src2, SRC2);
 
-    // VSCRATCH0 = Ordinal(SRC1, SRC2)
+    // VSCRATCH0 = Ordinal(SRC1)
     FCMEQ(VSCRATCH0.S4(), SRC1.S4(), SRC1.S4());
-    FCMEQ(VSCRATCH1.S4(), SRC2.S4(), SRC2.S4());
-    AND(VSCRATCH0.B16(), VSCRATCH0.B16(), VSCRATCH1.B16());
 
+    // FMIN will always pick the NaN
     FMIN(SRC1.S4(), SRC1.S4(), SRC2.S4());
 
     // In the case of NaN, pick SRC2
@@ -649,15 +657,16 @@ void JitShader::Compile_BREAKC(Instruction instr) {
 }
 
 void JitShader::Compile_CALL(Instruction instr) {
-    // Push offset of the return
+    // Push offset of the return and link-register
     MOV(XSCRATCH0, instr.flow_control.dest_offset + instr.flow_control.num_instructions);
-    STR(XSCRATCH0, SP, POST_INDEXED, -16);
+    STP(XSCRATCH0, X30, SP, POST_INDEXED, -16);
 
     // Call the subroutine
     BL(instruction_labels[instr.flow_control.dest_offset]);
 
+    // Restore the link-register
     // Skip over the return offset that's on the stack
-    ADD(SP, SP, 16);
+    LDP(XZR, X30, SP, PRE_INDEXED, 16);
 }
 
 void JitShader::Compile_CALLC(Instruction instr) {
@@ -686,8 +695,6 @@ void JitShader::Compile_CMP(Instruction instr) {
 
     static constexpr Cond cmp[] = {Cond::EQ, Cond::NE, Cond::LT, Cond::LE, Cond::GT, Cond::GE};
 
-    MOV(X1, 1);
-
     // Compare X-component
     FCMP(SRC1.toS(), SRC2.toS());
     CSET(COND0, cmp[op_x]);
@@ -710,7 +717,7 @@ void JitShader::Compile_MAD(Instruction instr) {
         Compile_SwizzleSrc(instr, 3, instr.mad.src3, SRC3);
     }
 
-    Compile_SanitizedMul(SRC1, SRC2, VSCRATCH0, VSCRATCH1);
+    Compile_SanitizedMul(SRC1, SRC2, VSCRATCH0);
     FADD(SRC1.S4(), SRC1.S4(), SRC3.S4());
 
     Compile_DestEnable(instr, SRC1);
@@ -760,12 +767,11 @@ void JitShader::Compile_LOOP(Instruction instr) {
     // This decodes the fields from the integer uniform at index instr.flow_control.int_uniform_id
     const std::size_t offset = Uniforms::GetIntUniformOffset(instr.flow_control.int_uniform_id);
     LDR(LOOPCOUNT, UNIFORMS, offset);
-    LSR(LOOPCOUNT_REG, LOOPCOUNT, 8);
-    AND(LOOPCOUNT_REG, LOOPCOUNT_REG, 0xFF); // Y-component is the start
-    LSR(LOOPINC, LOOPCOUNT, 16);
-    AND(LOOPINC, LOOPINC, 0xFF);  // Z-component is the incrementer
-    UXTB(LOOPCOUNT, LOOPCOUNT);   // X-component is iteration count
-    ADD(LOOPCOUNT, LOOPCOUNT, 1); // Iteration count is X-component + 1
+
+    UBFX(LOOPCOUNT_REG, LOOPCOUNT, 8, 8); // Y-component is the start
+    UBFX(LOOPINC, LOOPCOUNT, 16, 8);      // Z-component is the incrementer
+    UXTB(LOOPCOUNT, LOOPCOUNT);           // X-component is iteration count
+    ADD(LOOPCOUNT, LOOPCOUNT, 1);         // Iteration count is X-component + 1
 
     Label l_loop_start;
     l(l_loop_start);
@@ -773,9 +779,8 @@ void JitShader::Compile_LOOP(Instruction instr) {
     loop_break_labels.emplace_back(oaknut::Label());
     Compile_Block(instr.flow_control.dest_offset + 1);
     ADD(LOOPCOUNT_REG, LOOPCOUNT_REG, LOOPINC); // Increment LOOPCOUNT_REG by Z-component
-    SUB(LOOPCOUNT, LOOPCOUNT, 1);               // Increment loop count by 1
-    CMP(LOOPCOUNT, 0);
-    B(Cond::NE, l_loop_start); // Loop if not equal
+    SUBS(LOOPCOUNT, LOOPCOUNT, 1);              // Increment loop count by 1
+    B(Cond::NE, l_loop_start);                  // Loop if not equal
 
     l(loop_break_labels.back());
     loop_break_labels.pop_back();
@@ -814,8 +819,7 @@ void JitShader::Compile_EMIT(Instruction instr) {
     Label have_emitter, end;
 
     LDR(XSCRATCH0, STATE, u32(offsetof(UnitState, emitter_ptr)));
-    CMP(XSCRATCH0, 0);
-    B(Cond::NE, have_emitter);
+    CBNZ(XSCRATCH0, have_emitter);
 
     ABI_PushRegisters(*this, PersistentCallerSavedRegs());
     MOVP2R(ABI_PARAM1, reinterpret_cast<const void*>("Execute EMIT on VS"));
@@ -838,8 +842,7 @@ void JitShader::Compile_SETE(Instruction instr) {
 
     LDR(XSCRATCH0, STATE, u32(offsetof(UnitState, emitter_ptr)));
 
-    CMP(XSCRATCH0, 0);
-    B(Cond::NE, have_emitter);
+    CBNZ(XSCRATCH0, have_emitter);
 
     ABI_PushRegisters(*this, PersistentCallerSavedRegs());
     MOVP2R(ABI_PARAM1, reinterpret_cast<const void*>("Execute SETEMIT on VS"));
@@ -884,10 +887,10 @@ void JitShader::Compile_NextInstr() {
 
     l(instruction_labels[program_counter]);
 
-    Instruction instr = {(*program_code)[program_counter++]};
+    const Instruction instr = {(*program_code)[program_counter++]};
 
-    OpCode::Id opcode = instr.opcode.Value();
-    auto instr_func = instr_table[static_cast<unsigned>(opcode)];
+    const OpCode::Id opcode = instr.opcode.Value();
+    const auto instr_func = instr_table[static_cast<std::size_t>(opcode)];
 
     if (instr_func) {
         // JIT the instruction!
@@ -955,9 +958,7 @@ void JitShader::Compile(const std::array<u32, MAX_PROGRAM_CODE_LENGTH>* program_
     LDRB(COND1.toW(), STATE, u32(offsetof(UnitState, conditional_code[1])));
 
     // Used to set a register to one
-    static const float one[] = {1.f, 1.f, 1.f, 1.f};
-    MOVP2R(XSCRATCH0, one);
-    LDR(ONE, XSCRATCH0);
+    FMOV(ONE.S4(), FImm8(false, 7, 0));
 
     // Jump to start of the shader program
     BR(ABI_PARAM3);
@@ -996,13 +997,10 @@ void JitShader::CompilePrelude() {
 oaknut::Label JitShader::CompilePrelude_Log2() {
     oaknut::Label subroutine;
 
-    // We perform this approximation first performaing
-    // a range reduction into the range [1.0, 2.0). A minimax
-    // polynomial which was fit for the function log2(x) / (x - 1)
-    // is then evaluated. We multiply the result by (x - 1) then
-    // restore the result into the appropriate range.
-
-    // Coefficients for the minimax polynomial.
+    // We perform this approximation by first performing a range reduction into the range
+    // [1.0, 2.0). A minimax polynomial which was fit for the function log2(x) / (x - 1) is then
+    // evaluated. We multiply the result by (x - 1) then restore the result into the appropriate
+    // range. Coefficients for the minimax polynomial.
     // f(x) computes approximately log2(x) / (x - 1).
     // f(x) = c4 + x * (c3 + x * (c2 + x * (c1 + x * c0)).
     oaknut::Label c0;
@@ -1064,15 +1062,14 @@ oaknut::Label JitShader::CompilePrelude_Log2() {
     // Split input: SRC1=MANT[1,2) VSCRATCH1=Exponent
     MOV(XSCRATCH0.toW(), SRC1.Selem()[0]);
     MOV(XSCRATCH1.toW(), XSCRATCH0.toW());
-    AND(XSCRATCH0.toW(), XSCRATCH0.toW(), 0x7f800000);
     AND(XSCRATCH1.toW(), XSCRATCH1.toW(), 0x007fffff);
     ORR(XSCRATCH1.toW(), XSCRATCH1.toW(), 0x3f800000);
     MOV(SRC1.Selem()[0], XSCRATCH1.toW());
     //  SRC1 now contains the mantissa of the input.
-    LSR(XSCRATCH0.toW(), XSCRATCH0.toW(), 23);
+    UBFX(XSCRATCH0.toW(), XSCRATCH0.toW(), 23, 8);
     SUB(XSCRATCH0.toW(), XSCRATCH0.toW(), 0x7F);
     MOV(VSCRATCH1.Selem()[0], XSCRATCH0.toW());
-    UCVTF(VSCRATCH1.toS(), VSCRATCH1.toS()); // cvtsi2ss(VSCRATCH1, eax);
+    UCVTF(VSCRATCH1.toS(), VSCRATCH1.toS());
     // VSCRATCH1 now contains the exponent of the input.
 
     MOVP2R(XSCRATCH0, c0.ptr<void*>());
@@ -1111,12 +1108,9 @@ oaknut::Label JitShader::CompilePrelude_Log2() {
 oaknut::Label JitShader::CompilePrelude_Exp2() {
     oaknut::Label subroutine;
 
-    // SSE does not have a exp instruction, thus we must
-    // approximate. We perform this approximation first performaing
-    // a range reduction into the range [-0.5, 0.5). A minimax
-    // polynomial which was fit for the function exp2(x) is then
-    // evaluated. We then restore the result into the appropriate
-    // range.
+    // This approximation first performs a range reduction into the range [-0.5, 0.5). A minmax
+    // polynomial which was fit for the function exp2(x) is then evaluated. We then restore the
+    // result into the appropriate range.
 
     align(16);
     const void* input_max = (const void*)current_address();

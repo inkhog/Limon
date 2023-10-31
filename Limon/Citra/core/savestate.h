@@ -8,6 +8,9 @@
 #include <vector>
 #include "common/common_types.h"
 
+#include <mach/mach.h>
+#include <mach/vm_map.h>
+
 namespace Core {
 
 struct SaveStateInfo {
@@ -20,8 +23,18 @@ struct SaveStateInfo {
     std::string build_name;
 };
 
+static vm_address_t save_addr = 0; // compressed save file (max alloc 88mb)
+constexpr size_t size  =  88000000;
+
+static vm_address_t save_addr2 = 0; // uncompressed save file (max alloc 512mb)
+constexpr size_t size2 = 512000000;
+
 constexpr u32 SaveStateSlotCount = 10; // Maximum count of savestate slots
 
 std::vector<SaveStateInfo> ListSaveStates(u64 program_id, u64 movie_id);
+
+bool InitMem();
+void SaveState(std::string path, u64 _title_id);
+void LoadState(std::string path);
 
 } // namespace Core

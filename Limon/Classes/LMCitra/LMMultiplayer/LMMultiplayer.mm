@@ -23,8 +23,9 @@
 }
 
 -(void) directConnect:(NSString *)nickname ipAddress:(NSString *)ipAddress port:(NSString * _Nullable)port password:(NSString * _Nullable)password
-   onRoomStateChanged:(void (^)(RoomState))onRoomStateChanged {
+   onError:(void (^)())onError onRoomStateChanged:(void (^)(RoomState))onRoomStateChanged {
     roomMember = Network::GetRoomMember().lock();
+    roomMember->BindOnError([onError](const Network::RoomMember::Error& error) { onError(); }); // TODO: (antique) add actual alert for errors
     roomMember->BindOnStateChanged([onRoomStateChanged](const Network::RoomMember::State& state) { onRoomStateChanged((RoomState)state); });
     
     NSString *prt = NULL;

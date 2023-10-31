@@ -25,7 +25,7 @@ class BumperTriggerButton : UIView {
             if #available(iOS 17, *) {
                 return "\(rawValue).fill"
             } else {
-                let cleaned = rawValue.replacingOccurrences(of: ".button", with: "")
+                let cleaned = rawValue.replacingOccurrences(of: ".button", with: ".rectangle")
                     .replacingOccurrences(of: ".horizontal", with: "")
                 return "\(cleaned).fill"
             }

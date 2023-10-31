@@ -51,7 +51,7 @@ inline constexpr std::bitset<64> BuildRegSet(std::initializer_list<oaknut::Reg> 
 constexpr inline std::bitset<64> ABI_ALL_GPRS(0x00000000'7FFFFFFF);
 constexpr inline std::bitset<64> ABI_ALL_FPRS(0xFFFFFFFF'00000000);
 
-constexpr inline oaknut::XReg ABI_RETURN = oaknut::util::X8;
+constexpr inline oaknut::XReg ABI_RETURN = oaknut::util::X0;
 constexpr inline oaknut::XReg ABI_PARAM1 = oaknut::util::X0;
 constexpr inline oaknut::XReg ABI_PARAM2 = oaknut::util::X1;
 constexpr inline oaknut::XReg ABI_PARAM3 = oaknut::util::X2;

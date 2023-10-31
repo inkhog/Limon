@@ -14,7 +14,7 @@ struct ThumbstickTouchPosition {
 
 protocol ThumbstickViewDelegate {
     func touchesBegan(_ position: ThumbstickTouchPosition, for thumbstick: ThumbstickView.ThumbstickType)
-    func touchesEnded()
+    func touchesEnded(for thumbstick: ThumbstickView.ThumbstickType)
     func touchesMoved(_ position: ThumbstickTouchPosition, for thumbstick: ThumbstickView.ThumbstickType)
 }
 
@@ -29,6 +29,7 @@ class ThumbstickView : UIView {
     init(_ thumbstickType: ThumbstickType) {
         self.thumbstickType = thumbstickType
         super.init(frame: .zero)
+        layer.cornerCurve = .continuous
         isUserInteractionEnabled = true
     }
     
@@ -36,11 +37,17 @@ class ThumbstickView : UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        layer.cornerRadius = bounds.height / 2
+    }
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let delegate, let touch = touches.first else {
             return
         }
         
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         delegate.touchesBegan(position(from: touch.location(in: self)), for: thumbstickType)
     }
     
@@ -49,7 +56,7 @@ class ThumbstickView : UIView {
             return
         }
         
-        delegate.touchesEnded()
+        delegate.touchesEnded(for: thumbstickType)
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {

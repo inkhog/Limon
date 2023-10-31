@@ -50,15 +50,9 @@ class LMEmulationController : UIViewController {
         registerControllerNotifications()
         if GCController.controllers().count > 0 {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: {
-                self.virtualControllerView.hide()
+                self.virtualControllerView.physicalControllerDidConnect()
             })
         }
-        
-        thread = .init(block: {
-            self.citra().run()
-        })
-        thread.qualityOfService = .userInteractive
-        thread.threadPriority = 1.0
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -92,13 +86,15 @@ class LMEmulationController : UIViewController {
         super.viewDidLayoutSubviews()
         if !citra().isRunning() {
             citra().setMetalLayer(screenView.screen.layer as! CAMetalLayer)
-            thread.start()
+            Thread.detachNewThread {
+                self.citra().run()
+            }
         }
     }
     
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
-        citra().setOrientation(UIDevice.current.orientation, with: screenView.screen.layer as! CAMetalLayer)
+        self.citra().setOrientation(UIDevice.current.orientation, with: self.screenView.screen.layer as! CAMetalLayer)
     }
     
     // MARK: START ADD SUBVIEWS

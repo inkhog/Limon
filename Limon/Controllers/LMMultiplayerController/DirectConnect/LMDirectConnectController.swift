@@ -91,6 +91,7 @@ class LMDirectConnectController : LMLargeImageTitleController {
             
             self.dismiss(animated: true) {
                 self.multiplayer().directConnect(nickname, ipAddress: ipAddress, port: self.portTextField.text, password: self.passwordTextField.text,
+                                                 onError: delegate.onError,
                                                  onRoomStateChanged: delegate.onRoomStateChanged(state:))
             }
         }))
@@ -155,7 +156,7 @@ class LMDirectConnectController : LMLargeImageTitleController {
         view.removeConstraint(keyboardShownConstraints)
         view.addConstraint(keyboardHiddenConstraints)
         
-        UIView.animate(withDuration: 0.2) {
+        UIView.animate(withDuration: 0.1) {
             if let _ = self.subtitleString {
                 self.subtitleLabel.alpha = 1
             }
@@ -168,7 +169,7 @@ class LMDirectConnectController : LMLargeImageTitleController {
         view.removeConstraint(keyboardHiddenConstraints)
         view.addConstraint(keyboardShownConstraints)
         
-        UIView.animate(withDuration: 0.2) {
+        UIView.animate(withDuration: 0.1) {
             if let _ = self.subtitleString {
                 self.subtitleLabel.alpha = 0
             }
