@@ -59,10 +59,11 @@ class LMVirtualControllerView : UIView {
         ])
         
         NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: .main) { _ in
-            if UIDevice.current.orientation == .portrait {
+            let orientation = UIDevice.current.orientation
+            if orientation == .portrait {
                 self.removeConstraints([self.landscapeSelectConstraint, self.landscapeStartConstraint])
                 self.addConstraints([self.portraitSelectConstraint, self.portraitStartConstraint])
-            } else {
+            } else if orientation == .landscapeLeft || orientation == .landscapeRight {
                 self.removeConstraints([self.portraitSelectConstraint, self.portraitStartConstraint])
                 self.addConstraints([self.landscapeSelectConstraint, self.landscapeStartConstraint])
             }

@@ -20,25 +20,47 @@ typedef struct AnnounceMultiplayerRoom::Room MultiplayerRoom;
 typedef struct AnnounceMultiplayerRoom::Room::Member MultiplayerRoomMember;
 
 typedef struct Network::Room NetworkRoom;
+typedef enum Network::RoomMember::Error NetworkRoomMemberError;
 typedef class Network::RoomMember NetworkRoomMember;
-typedef enum Network::RoomMember::State RoomMemberState;
+typedef enum Network::RoomMember::State NetworkRoomMemberState;
 #endif
 
 NS_ASSUME_NONNULL_BEGIN
 
+typedef NS_ENUM(NSUInteger, RoomError) {
+    lostConnection,
+    hostKicked,
+    
+    unknownError,
+    nameCollision,
+    macCollision,
+    consoleIdCollision,
+    wrongVersion,
+    wrongPassword,
+    couldNotConnect,
+    roomIsFull,
+    hostBanned,
+    
+    permissionDenied,
+    noSuchUser
+};
+
 typedef NS_ENUM(NSUInteger, RoomState) {
-    RSUninitialized,
-    RSIdle,
-    RSJoining,
-    RSJoined,
-    RSModerator
+    uninitialized,
+    idle,
+    joining,
+    joined,
+    moderator
 };
 
 @interface LMMultiplayer : NSObject
+@property (nonatomic, assign) BOOL connected;
+
 +(LMMultiplayer *) sharedInstance;
 
 -(void) directConnect:(NSString *)nickname ipAddress:(NSString *)ipAddress port:(NSString * _Nullable)port password:(NSString * _Nullable)password
-              onError:(void (^)())onError onRoomStateChanged:(void(^)(RoomState))onRoomStateChanged;
+              onError:(void (^)(RoomError))onError onRoomStateChanged:(void(^)(RoomState))onRoomStateChanged;
+-(void) leave;
 @end
 
 NS_ASSUME_NONNULL_END

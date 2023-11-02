@@ -27,6 +27,8 @@ NS_ASSUME_NONNULL_BEGIN
     uint64_t title_id, movie_id;
     NSString *_path;
     NSURL *_savePath;
+    
+    CAMetalLayer* _layer;
 }
 
 @property (nonatomic, retain) LMGameImporter *gameImporter;
@@ -50,7 +52,6 @@ NS_ASSUME_NONNULL_BEGIN
 -(void) pause;
 -(void) resume;
 -(void) run;
--(void) stop;
 
 -(void) touchesBegan:(CGPoint)point NS_SWIFT_NAME(touchesBegan(point:));
 -(void) touchesEnded NS_SWIFT_NAME(touchesEnded());

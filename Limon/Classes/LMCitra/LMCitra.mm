@@ -17,6 +17,7 @@
 #include "common/logging/backend.h"
 #include "common/logging/log.h"
 #include "core/core.h"
+#include "core/frontend/applets/default_applets.h"
 #include "core/savestate.h"
 #include "core/loader/loader.h"
 
@@ -166,32 +167,38 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
     Settings::values.input_type.SetValue((AudioCore::InputType)[[NSNumber numberWithInteger:EmulationSettings.audioInputType] unsignedIntValue]);
     Settings::values.output_type.SetValue((AudioCore::SinkType)[[NSNumber numberWithInteger:EmulationSettings.audioOutputType] unsignedIntValue]);
     
+    Frontend::RegisterDefaultApplets(core);
+    
     core.ApplySettings();
     Settings::LogSettings();
 }
 
 
 -(void) setMetalLayer:(CAMetalLayer *)layer {
-    window = std::make_unique<LMEmulationWindow_Vulkan>((__bridge CA::MetalLayer*)layer, vulkan_library, false, layer.frame.size);
+    _layer = layer;
+    window = std::make_unique<LMEmulationWindow_Vulkan>((__bridge CA::MetalLayer*)_layer, vulkan_library, false, layer.frame.size);
     [self setOrientation:[[UIDevice currentDevice] orientation] with:layer];
 }
 
 -(void) setOrientation:(UIDeviceOrientation)orientation with:(CAMetalLayer *)layer {
+    _layer = layer;
     if (_isRunning && !_isPaused) {
-        window->OrientationChanged(orientation == UIDeviceOrientationPortrait, (__bridge CA::MetalLayer*)layer);
+        window->OrientationChanged(orientation == UIDeviceOrientationPortrait, (__bridge CA::MetalLayer*)_layer);
     }
 }
 
 -(void) setLayoutOption:(NSUInteger)option with:(CAMetalLayer *)layer {
+    _layer = layer;
     self._layoutOption = option;
     
     Settings::values.layout_option.SetValue((Settings::LayoutOption)[[NSNumber numberWithInteger:self._layoutOption] unsignedIntegerValue]);
-    [self setOrientation:[[UIDevice currentDevice] orientation] with:layer];
+    [self setOrientation:[[UIDevice currentDevice] orientation] with:_layer];
 }
 
 -(void) swapScreens:(CAMetalLayer *)layer {
+    _layer = layer;
     Settings::values.swap_screen.SetValue(Settings::values.swap_screen.GetValue() ? false : true);
-    [self setOrientation:[[UIDevice currentDevice] orientation] with:layer];
+    [self setOrientation:[[UIDevice currentDevice] orientation] with:_layer];
 }
 
 
@@ -231,17 +238,18 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
     
     _isRunning = TRUE;
     _isPaused = FALSE;
+    _isLoading = FALSE;
+    _isSaving = FALSE;
     
     while (_isRunning) {
         if (!_isPaused) {
             if (Settings::values.volume.GetValue() == 0)
                 Settings::values.volume.SetValue(1);
             
-            auto _ = core.RunLoop();
+            auto result = core.RunLoop();
         } else {
             if (Settings::values.volume.GetValue() == 1)
                 Settings::values.volume.SetValue(0);
-            
             window->PollEvents();
         }
         
@@ -253,13 +261,12 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
     }
 }
 
--(void) stop {
-    
-}
-
 
 -(void) touchesBegan:(CGPoint)point {
-    window->OnTouchEvent(point.x, point.y);
+    float heightRatio=window->GetFramebufferLayout().height / (_layer.frame.size.height * [[UIScreen mainScreen] nativeScale]);
+    float widthRatio=window->GetFramebufferLayout().width / (_layer.frame.size.width * [[UIScreen mainScreen] nativeScale]);
+    // window->OnTouchEvent(point.x, point.y);
+    window->OnTouchEvent((point.x) * [[UIScreen mainScreen] nativeScale] * widthRatio, ((point.y) * [[UIScreen mainScreen] nativeScale] * heightRatio));
 }
 
 -(void) touchesEnded {
@@ -267,7 +274,10 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
 }
 
 -(void) touchesMoved:(CGPoint)point {
-    window->OnTouchMoved(point.x, point.y);
+    float heightRatio=window->GetFramebufferLayout().height / (_layer.frame.size.height * [[UIScreen mainScreen] nativeScale]);
+    float widthRatio=window->GetFramebufferLayout().width / (_layer.frame.size.width * [[UIScreen mainScreen] nativeScale]);
+    // window->OnTouchMoved(point.x, point.y);
+    window->OnTouchMoved((point.x) * [[UIScreen mainScreen] nativeScale] * widthRatio, ((point.y) * [[UIScreen mainScreen] nativeScale] * heightRatio));
 }
 
 -(BOOL) isPaused {

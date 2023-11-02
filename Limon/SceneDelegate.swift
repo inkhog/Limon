@@ -5,12 +5,13 @@
 //  Created by Jarrod Norwell on 10/6/23.
 //
 
+import AVFAudio
 import Toast
 import UIKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: ToastWindow?
-
+    
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
@@ -33,18 +34,21 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                                                     icon: .init(systemName: "app.badge.fill")?.applyingSymbolConfiguration(.init(paletteColors: [.systemRed, .tintColor])))
         welcomeController.set_shouldInlineButtontray(true)
         
-        welcomeController.addBulletedListItem(withTitle: "Fixed Virtual Controller",
-                                              description: "Fixed an issue where the virtual controller would be missing the L, ZL, R and ZR symbols on iOS 16",
-                                              image: .init(systemName: "gamecontroller.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Improved Virtual Controller",
-                                              description: "Partially rewrote the virtual controller to improve how the left and right thumbsticks are displayed and handled",
-                                              image: .init(systemName: "gamecontroller.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Implemented Load, Save States",
-                                              description: "Load and save states are here but be warned they may require a higher end device. Crashes on lower end devices are expected",
-                                              image: .init(systemName: "gamecontroller.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Enhanced User Experience",
-                                              description: "Added haptic feedback for successful and unsuccessful Direct Room connections and thumbstick activation and sped up animations for all custom user interface elements",
-                                              image: .init(systemName: "gamecontroller.fill"))
+        welcomeController.addBulletedListItem(withTitle: "Added Full iOS 15 Support",
+                                              description: "Added version checks for iOS 16 and above allowing for iOS 15 support to be implemented",
+                                              image: .init(systemName: "pause.rectangle.fill"))
+        welcomeController.addBulletedListItem(withTitle: "Added Custom Menu Sound Support",
+                                              description: "Added the ability to have custom menu music play when browsing the game library: add menu.mp3 to sounds/",
+                                              image: .init(systemName: "music.quarternote.3"))
+        welcomeController.addBulletedListItem(withTitle: "Fixed Landscape Touch Detection",
+                                              description: "Fixed an issue where touches on the bottom screen would misaligned from the location of the touch",
+                                              image: .init(systemName: "hand.tap.fill"))
+        welcomeController.addBulletedListItem(withTitle: "Fixed Multiplayer Direct Connect",
+                                              description: "Fixed an issue where the entered port was not being set",
+                                              image: .init(systemName: "person.line.dotted.person.fill"))
+        welcomeController.addBulletedListItem(withTitle: "Fixed Import CIA",
+                                              description: "Fixed an issue where the app would crash when tapping Import CIA",
+                                              image: .init(systemName: "arrow.down.doc.fill"))
         
         
         var acknowledgeButtonConfiguration = UIButton.Configuration.filled()
@@ -75,9 +79,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             loadingController.modalPresentationStyle = .fullScreen
             welcomeController.present(loadingController, animated: true)
         })))
-        welcomeController.buttonTray.setCaptionText("v\(version).\(build)", style: 0)
+        welcomeController.buttonTray.setCaptionText("v\(version) (\(build))", style: 0)
         
-        // UserDefaults.standard.removeObject(forKey: "acknowledgedWhatsNew_\(version).\(build)")
+        UserDefaults.standard.removeObject(forKey: "acknowledgedWhatsNew_\(version).\(build)")
         window.rootViewController = UserDefaults.standard.bool(forKey: "dontShowWhatsNewAgain") ? LMLoadingController() : UserDefaults.standard.bool(forKey: "acknowledgedWhatsNew_\(version).\(build)") ? LMLoadingController() : welcomeController
         window.tintColor = .systemYellow
         window.makeKeyAndVisible()
@@ -87,30 +91,37 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             setDefaultSettings()
             UserDefaults.standard.set(true, forKey: "hasSetDefaultSettings")
         }
+        
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback)
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print(error.localizedDescription)
+        }
     }
-
+    
     func sceneDidDisconnect(_ scene: UIScene) {
         // Called as the scene is being released by the system.
         // This occurs shortly after the scene enters the background, or when its session is discarded.
         // Release any resources associated with this scene that can be re-created the next time the scene connects.
         // The scene may re-connect later, as its session was not necessarily discarded (see `application:didDiscardSceneSessions` instead).
     }
-
+    
     func sceneDidBecomeActive(_ scene: UIScene) {
         // Called when the scene has moved from an inactive state to an active state.
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
     }
-
+    
     func sceneWillResignActive(_ scene: UIScene) {
         // Called when the scene will move from an active state to an inactive state.
         // This may occur due to temporary interruptions (ex. an incoming phone call).
     }
-
+    
     func sceneWillEnterForeground(_ scene: UIScene) {
         // Called as the scene transitions from the background to the foreground.
         // Use this method to undo the changes made on entering the background.
     }
-
+    
     func sceneDidEnterBackground(_ scene: UIScene) {
         // Called as the scene transitions from the foreground to the background.
         // Use this method to save data, release shared resources, and store enough scene-specific state information
@@ -121,19 +132,19 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
     /*
      func onChatMessageReceived(message: ChatMessage) {
-        NotificationCenter.default.post(name: .init("onChatMessageReceived"), object: message)
-        UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
-    }
+     NotificationCenter.default.post(name: .init("onChatMessageReceived"), object: message)
+     UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+     }
      */
     
-    func onError() { // TODO: (antique) add a post notification to the emulation view controller
+    func onError(error: RoomError) { // TODO: (antique) add a post notification to the emulation view controller
         UINotificationFeedbackGenerator().notificationOccurred(.error)
     }
     
     func onRoomStateChanged(state: RoomState) {
         NotificationCenter.default.post(name: .init("onRoomStateChanged"), object: state)
         switch state {
-        case .RSJoined:
+        case .joined:
             UINotificationFeedbackGenerator().notificationOccurred(.success)
         default:
             break

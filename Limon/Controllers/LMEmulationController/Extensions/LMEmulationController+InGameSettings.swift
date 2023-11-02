@@ -35,8 +35,14 @@ extension LMEmulationController {
                 if #available(iOS 17, *) { true } else { false }
             }
             
+            let menu: UIMenu = if #available(iOS 16, *) {
+                .init(options: .displayInline, preferredElementSize: .medium, children: children())
+            } else {
+                .init(options: .displayInline, children: children())
+            }
+            
             return [
-                UIMenu(options: .displayInline, preferredElementSize: .medium, children: children()),
+                menu,
                 UIAction(title: "Toggle L, ZL, R, ZR", image: .init(systemName: self.virtualControllerView.bumpersTriggersHidden ? "eye.fill" : "eye.slash.fill"), handler: { _ in
                     self.virtualControllerView.bumpersTriggersHidden ? self.virtualControllerView.showBumpersTriggers() : self.virtualControllerView.hideBumpersTriggers()
                     self.reloadInGameSettingsMenu()
@@ -49,19 +55,38 @@ extension LMEmulationController {
     
     fileprivate func multiplayerSubmenu() -> UIMenu {
         func children() -> [UIMenuElement] {
-            [
-                UIMenu(options: .displayInline, preferredElementSize: .medium, children: [
+            var action: UIAction
+            if multiplayer().connected {
+                action = .init(title: "Leave", image: .init(systemName: "xmark.circle.fill"), handler: { _ in
+                    self.multiplayer().leave()
+                    self.reloadInGameSettingsMenu()
+                })
+            } else {
+                action = .init(title: "Direct Connect", image: .init(systemName: "person.line.dotted.person.fill"), handler: { _ in
+                    self.citra().pause()
+                    self.reloadInGameSettingsMenu()
+                    
+                    let directConnectController = LMDirectConnectController(.init(systemName: "person.line.dotted.person.fill"), "Direct Connect",
+                        "Connect directly to a multiplayer room by entering your nickname along with the room's IP address, port if non-default and password if password protected")
+                    directConnectController.modalPresentationStyle = .fullScreen
+                    self.present(directConnectController, animated: true)
+                })
+            }
+            
+            let menu: UIMenu = if #available(iOS 16, *) {
+                .init(options: .displayInline, preferredElementSize: .medium, children: [
                     UIAction(title: "Browse Servers", image: .init(systemName: "globe.asia.australia.fill"), attributes: .disabled, handler: { _ in }),
-                    UIAction(title: "Direct Connect", image: .init(systemName: "person.line.dotted.person.fill"), handler: { _ in
-                        self.citra().pause()
-                        self.reloadInGameSettingsMenu()
-                        
-                        let directConnectController = LMDirectConnectController(.init(systemName: "person.line.dotted.person.fill"), "Direct Connect",
-                            "Connect directly to a multiplayer room by entering your nickname along with the room's IP address, port if non-default and password if password protected")
-                        directConnectController.modalPresentationStyle = .fullScreen
-                        self.present(directConnectController, animated: true)
-                    })
+                    action
                 ])
+            } else {
+                .init(options: .displayInline, children: [
+                    UIAction(title: "Browse Servers", image: .init(systemName: "globe.asia.australia.fill"), attributes: .disabled, handler: { _ in }),
+                    action
+                ])
+            }
+            
+            return [
+                menu
             ]
         }
         
@@ -89,13 +114,24 @@ extension LMEmulationController {
                 }
             }
             
-            return [
-                UIMenu(options: .displayInline, preferredElementSize: .medium, children: [
+            let menu: UIMenu = if #available(iOS 16, *) {
+                .init(options: .displayInline, preferredElementSize: .medium, children: [
                     UIMenu(title: "Screen Layouts", image: .init(systemName: "rectangle.3.group.fill"), children: children()),
                     UIAction(title: "Swap Screens", image: .init(systemName: "rectangle.2.swap"), handler: { _ in
                         self.citra().swapScreens(self.screenView.screen.layer as! CAMetalLayer)
                     })
                 ])
+            } else {
+                .init(options: .displayInline, children: [
+                    UIMenu(title: "Screen Layouts", image: .init(systemName: "rectangle.3.group.fill"), children: children()),
+                    UIAction(title: "Swap Screens", image: .init(systemName: "rectangle.2.swap"), handler: { _ in
+                        self.citra().swapScreens(self.screenView.screen.layer as! CAMetalLayer)
+                    })
+                ])
+            }
+            
+            return [
+                menu
             ]
         }
         
@@ -131,8 +167,14 @@ extension LMEmulationController {
                 })
             }
             
+            let menu: UIMenu = if #available(iOS 16, *) {
+                .init(options: .displayInline, preferredElementSize: .medium, children: children())
+            } else {
+                .init(options: .displayInline, children: children())
+            }
+            
             return [
-                UIMenu(options: .displayInline, preferredElementSize: .medium, children: children())
+                menu
             ]
         }
         
@@ -150,10 +192,7 @@ extension LMEmulationController {
                     self.citra().resume()
                     self.reloadInGameSettingsMenu()
                 }),
-                (title: "Stop", systemName: "stop.fill", attributes: [.disabled], handler: { _ in
-                    self.citra().stop()
-                    self.reloadInGameSettingsMenu()
-                })
+                (title: "Stop", systemName: "stop.fill", attributes: [.disabled], handler: { _ in })
             ]
             
             return states.reduce(into: [UIAction]()) { partialResult, state in
@@ -161,7 +200,13 @@ extension LMEmulationController {
             }
         }
         
-        return .init(options: .displayInline, preferredElementSize: .small, children: children())
+        let menu: UIMenu = if #available(iOS 16, *) {
+            .init(options: .displayInline, preferredElementSize: .small, children: children())
+        } else {
+            .init(options: .displayInline, children: children())
+        }
+        
+        return menu
     }
     
     func inGameSettingsMenu() -> UIMenu {

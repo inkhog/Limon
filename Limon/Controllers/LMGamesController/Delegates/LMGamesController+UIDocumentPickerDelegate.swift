@@ -15,7 +15,7 @@ extension LMGamesController : UIDocumentPickerDelegate {
         }
         
         let importingController = LMImportingController(url)
-        importingController.modalPresentationStyle = .overFullScreen
+        importingController.modalPresentationStyle = .fullScreen
         present(importingController, animated: true)
     }
     

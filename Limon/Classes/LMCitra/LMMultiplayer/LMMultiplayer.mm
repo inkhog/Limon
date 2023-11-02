@@ -23,20 +23,29 @@
 }
 
 -(void) directConnect:(NSString *)nickname ipAddress:(NSString *)ipAddress port:(NSString * _Nullable)port password:(NSString * _Nullable)password
-   onError:(void (^)())onError onRoomStateChanged:(void (^)(RoomState))onRoomStateChanged {
+   onError:(void (^)(RoomError))onError onRoomStateChanged:(void (^)(RoomState))onRoomStateChanged {
     roomMember = Network::GetRoomMember().lock();
-    roomMember->BindOnError([onError](const Network::RoomMember::Error& error) { onError(); }); // TODO: (antique) add actual alert for errors
+    roomMember->BindOnError([onError](const Network::RoomMember::Error& error) { onError((RoomError)error); }); // TODO: (antique) add actual alert for errors
     roomMember->BindOnStateChanged([onRoomStateChanged](const Network::RoomMember::State& state) { onRoomStateChanged((RoomState)state); });
     
     NSString *prt = NULL;
     if ([port isEqualToString:@""] || port == NULL)
         prt = @"24872";
+    else
+        prt = port;
     
     if ([password isEqualToString:@""] || password == NULL)
         roomMember->Join([nickname UTF8String], Service::CFG::GetConsoleIdHash(Core::System::GetInstance()), [ipAddress UTF8String],
-                         [prt intValue], 0, Network::NoPreferredMac);
+                         [[NSNumber numberWithInt:[prt intValue]] unsignedIntValue], 0, Network::NoPreferredMac);
     else
         roomMember->Join([nickname UTF8String], Service::CFG::GetConsoleIdHash(Core::System::GetInstance()), [ipAddress UTF8String],
-                         [prt intValue], 0, Network::NoPreferredMac, [password UTF8String]);
+                         [[NSNumber numberWithInt:[prt intValue]] unsignedIntValue], 0, Network::NoPreferredMac, [password UTF8String]);
+    
+    _connected = TRUE;
+}
+
+-(void) leave {
+    roomMember->Leave();
+    _connected = FALSE;
 }
 @end

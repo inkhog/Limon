@@ -5,6 +5,7 @@
 //  Created by Jarrod Norwell on 10/9/23.
 //
 
+import AVFAudio
 import Foundation
 import UIKit
 
@@ -168,6 +169,8 @@ class LMGamesController : UICollectionViewController {
     
     var settings = EmulationSettings()
     
+    var player: AVAudioPlayer!
+    
     init(_ collectionViewLayout: UICollectionViewLayout, _ items: (imported: [LMInstalledGame], installed: [LMInstalledGame], system: [LMImportedGame])) {
         self.items = items
         super.init(collectionViewLayout: collectionViewLayout)
@@ -288,6 +291,20 @@ class LMGamesController : UICollectionViewController {
             
             await dataSource.apply(snapshot)
         }
+        
+        
+        
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("sounds", conformingTo: .folder)
+            .appendingPathComponent("menu.mp3", conformingTo: .fileURL)
+            
+        do {
+            self.player = try AVAudioPlayer(contentsOf: url)
+            self.player.numberOfLoops = -1
+            self.player.play()
+        } catch {
+            print(error.localizedDescription)
+        }
     }
     
     override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
@@ -338,19 +355,35 @@ class LMGamesController : UICollectionViewController {
         ]
         
         
-        let coreSettingsMenu = UIMenu(options: .displayInline, preferredElementSize: .small, children: [
-            UIAction(image: .init(systemName: EmulationSettings.useCPUJIT ? "tortoise.fill" : "hare.fill"), handler: { _ in
-                self.settings.set(bool: !EmulationSettings.useCPUJIT, for: "useCPUJIT", self)
-            }),
-            UIMenu(title: "CPU Clock", image: .init(systemName: EmulationSettings.cpuClockPercentage == 100 ? "dial.high.fill" : EmulationSettings.cpuClockPercentage == 75 ? "dial.medium.fill" : "dial.low.fill"), children: cpuClockMenuChildren.reduce(into: [UIAction](), { partialResult, option in
-                partialResult.append(.init(title: "\(option.value)%", image: .init(systemName: option.systemName), state: EmulationSettings.cpuClockPercentage == option.value ? .on : .off, handler: { _ in
-                    self.settings.set(int: option.value, for: "cpuClockPercentage", self)
-                }))
-            })),
-            UIAction(image: .init(systemName: EmulationSettings.isNew3DS ? "star.slash.fill" : "star.fill"), handler: { _ in
-                self.settings.set(bool: !EmulationSettings.isNew3DS, for: "isNew3DS", self)
-            })
-        ])
+        let coreSettingsMenu: UIMenu = if #available(iOS 16, *) {
+            .init(options: .displayInline, preferredElementSize: .small, children: [
+                UIAction(image: .init(systemName: EmulationSettings.useCPUJIT ? "tortoise.fill" : "hare.fill"), handler: { _ in
+                    self.settings.set(bool: !EmulationSettings.useCPUJIT, for: "useCPUJIT", self)
+                }),
+                UIMenu(title: "CPU Clock", image: .init(systemName: EmulationSettings.cpuClockPercentage == 100 ? "dial.high.fill" : EmulationSettings.cpuClockPercentage == 75 ? "dial.medium.fill" : "dial.low.fill"), children: cpuClockMenuChildren.reduce(into: [UIAction](), { partialResult, option in
+                    partialResult.append(.init(title: "\(option.value)%", image: .init(systemName: option.systemName), state: EmulationSettings.cpuClockPercentage == option.value ? .on : .off, handler: { _ in
+                        self.settings.set(int: option.value, for: "cpuClockPercentage", self)
+                    }))
+                })),
+                UIAction(image: .init(systemName: EmulationSettings.isNew3DS ? "star.slash.fill" : "star.fill"), handler: { _ in
+                    self.settings.set(bool: !EmulationSettings.isNew3DS, for: "isNew3DS", self)
+                })
+            ])
+        } else {
+            .init(options: .displayInline, children: [
+                UIAction(image: .init(systemName: EmulationSettings.useCPUJIT ? "tortoise.fill" : "hare.fill"), handler: { _ in
+                    self.settings.set(bool: !EmulationSettings.useCPUJIT, for: "useCPUJIT", self)
+                }),
+                UIMenu(title: "CPU Clock", image: .init(systemName: EmulationSettings.cpuClockPercentage == 100 ? "dial.high.fill" : EmulationSettings.cpuClockPercentage == 75 ? "dial.medium.fill" : "dial.low.fill"), children: cpuClockMenuChildren.reduce(into: [UIAction](), { partialResult, option in
+                    partialResult.append(.init(title: "\(option.value)%", image: .init(systemName: option.systemName), state: EmulationSettings.cpuClockPercentage == option.value ? .on : .off, handler: { _ in
+                        self.settings.set(int: option.value, for: "cpuClockPercentage", self)
+                    }))
+                })),
+                UIAction(image: .init(systemName: EmulationSettings.isNew3DS ? "star.slash.fill" : "star.fill"), handler: { _ in
+                    self.settings.set(bool: !EmulationSettings.isNew3DS, for: "isNew3DS", self)
+                })
+            ])
+        }
         
         
         let audioInputMenuChildren = [
@@ -361,18 +394,33 @@ class LMGamesController : UICollectionViewController {
             (title: "Auto", value: 0), (title: "Disabled", value: 1), (title: "OpenAL", value: 2), (title: "SDL2", value: 3), (title: "CoreAudio", value: 4)
         ]
         
-        let audioSettingsMenu = UIMenu(options: .displayInline, preferredElementSize: .small, children: [
-            UIMenu(title: "Audio Input", image: .init(systemName: "mic.fill"), children: audioInputMenuChildren.reduce(into: [UIAction](), { partialResult, input in
-                partialResult.append(.init(title: input.title, state: EmulationSettings.audioInputType == input.value ? .on : .off, handler: { _ in
-                    self.settings.set(int: input.value, for: "audioInputType", self)
+        let audioSettingsMenu: UIMenu = if #available(iOS 16, *) {
+            .init(options: .displayInline, preferredElementSize: .small, children: [
+                UIMenu(title: "Audio Input", image: .init(systemName: "mic.fill"), children: audioInputMenuChildren.reduce(into: [UIAction](), { partialResult, input in
+                    partialResult.append(.init(title: input.title, state: EmulationSettings.audioInputType == input.value ? .on : .off, handler: { _ in
+                        self.settings.set(int: input.value, for: "audioInputType", self)
+                    }))
+                })),
+                UIMenu(title: "Audio Output", image: .init(systemName: "speaker.wave.3.fill"), children: audioOutputMenuChildren.reduce(into: [UIAction](), { partialResult, output in
+                    partialResult.append(.init(title: output.title, attributes: output.value == 4 ? [.disabled] : [], state: EmulationSettings.audioOutputType == output.value ? .on : .off, handler: { _ in
+                        self.settings.set(int: output.value, for: "audioOutputType", self)
+                    }))
                 }))
-            })),
-            UIMenu(title: "Audio Output", image: .init(systemName: "speaker.wave.3.fill"), children: audioOutputMenuChildren.reduce(into: [UIAction](), { partialResult, output in
-                partialResult.append(.init(title: output.title, attributes: output.value == 4 ? [.disabled] : [], state: EmulationSettings.audioOutputType == output.value ? .on : .off, handler: { _ in
-                    self.settings.set(int: output.value, for: "audioOutputType", self)
+            ])
+        } else {
+            .init(options: .displayInline, children: [
+                UIMenu(title: "Audio Input", image: .init(systemName: "mic.fill"), children: audioInputMenuChildren.reduce(into: [UIAction](), { partialResult, input in
+                    partialResult.append(.init(title: input.title, state: EmulationSettings.audioInputType == input.value ? .on : .off, handler: { _ in
+                        self.settings.set(int: input.value, for: "audioInputType", self)
+                    }))
+                })),
+                UIMenu(title: "Audio Output", image: .init(systemName: "speaker.wave.3.fill"), children: audioOutputMenuChildren.reduce(into: [UIAction](), { partialResult, output in
+                    partialResult.append(.init(title: output.title, attributes: output.value == 4 ? [.disabled] : [], state: EmulationSettings.audioOutputType == output.value ? .on : .off, handler: { _ in
+                        self.settings.set(int: output.value, for: "audioOutputType", self)
+                    }))
                 }))
-            }))
-        ])
+            ])
+        }
         
         let rendererSettings: [UIMenuElement] = [
             UIMenu(title: "Shader", image: .init(systemName: ""), children: [
@@ -430,7 +478,11 @@ class LMGamesController : UICollectionViewController {
             }))
         ]
         
-        let rendererSettings2Menu = UIMenu(options: .displayInline, preferredElementSize: .small, children: rendererSettings2)
+        let rendererSettings2Menu: UIMenu = if #available(iOS 16, *) {
+            .init(options: .displayInline, preferredElementSize: .small, children: rendererSettings2)
+        } else {
+            .init(options: .displayInline, children: rendererSettings2)
+        }
         
         return .init(children: [
             UIAction(title: "Import CIA", image: .init(systemName: "arrow.down.doc.fill"), handler: { _ in

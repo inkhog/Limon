@@ -16,7 +16,7 @@ class LMEmulationController : UIViewController {
     var virtualControllerView: LMVirtualControllerView!
     var screenView = LMScreenView(frame: UIScreen.main.bounds)
     
-    var roomState: RoomState = .RSUninitialized
+    var roomState: RoomState = .uninitialized
     
     var game: AnyHashable
     init(game: AnyHashable) {
@@ -92,6 +92,14 @@ class LMEmulationController : UIViewController {
         }
     }
     
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        NotificationCenter.default.removeObserver(self, name: NSNotification.Name.GCControllerDidConnect, object: nil)
+        NotificationCenter.default.removeObserver(self, name: NSNotification.Name.GCControllerDidDisconnect, object: nil)
+        
+        NotificationCenter.default.removeObserver(self, name: .init("onRoomStateChanged"), object: nil)
+    }
+    
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
         self.citra().setOrientation(UIDevice.current.orientation, with: self.screenView.screen.layer as! CAMetalLayer)
@@ -124,13 +132,13 @@ class LMEmulationController : UIViewController {
             }
             
             switch self.roomState {
-            case .RSIdle, .RSUninitialized:
+            case .idle, .uninitialized:
                 configuration.baseBackgroundColor = .systemGray
-            case .RSJoined:
+            case .joined:
                 configuration.baseBackgroundColor = .systemGreen
-            case .RSJoining:
+            case .joining:
                 configuration.baseBackgroundColor = .systemOrange
-            case .RSModerator:
+            case .moderator:
                 configuration.baseBackgroundColor = .systemYellow
             default:
                 break

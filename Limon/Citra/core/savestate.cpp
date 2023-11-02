@@ -300,4 +300,12 @@ void LoadState(std::string path) {
     delete file;
 }
 
+
+void CleanState() {
+    vm_deallocate(mach_task_self(), save_addr2, size2);
+    vm_deallocate(mach_task_self(), save_addr, size);
+    save_addr2=0;
+    save_addr=0;
+}
+
 } // namespace Core

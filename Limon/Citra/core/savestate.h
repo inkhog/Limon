@@ -37,4 +37,6 @@ bool InitMem();
 void SaveState(std::string path, u64 _title_id);
 void LoadState(std::string path);
 
+void CleanState();
+
 } // namespace Core

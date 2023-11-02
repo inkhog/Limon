@@ -65,6 +65,11 @@
 		E65F66F82AE8E4D100C851DD /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = E65F66F72AE8E4D100C851DD /* libMoltenVK.dylib */; };
 		E65F66F92AE8E4E900C851DD /* libMoltenVK.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = E65F66F72AE8E4D100C851DD /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		E65F66FB2AE8EC7100C851DD /* glslang.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = E65F66FA2AE8EC7100C851DD /* glslang.xcframework */; };
+		E67133E82AF331D1009F0595 /* LMMultiplayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E67133E72AF331D1009F0595 /* LMMultiplayer.swift */; };
+		E67133EB2AF334C2009F0595 /* Meow in Frameworks */ = {isa = PBXBuildFile; productRef = E67133EA2AF334C2009F0595 /* Meow */; };
+		E67133ED2AF334C2009F0595 /* MongoClient in Frameworks */ = {isa = PBXBuildFile; productRef = E67133EC2AF334C2009F0595 /* MongoClient */; };
+		E67133EF2AF334C2009F0595 /* MongoCore in Frameworks */ = {isa = PBXBuildFile; productRef = E67133EE2AF334C2009F0595 /* MongoCore */; };
+		E67133F12AF334C2009F0595 /* MongoKitten in Frameworks */ = {isa = PBXBuildFile; productRef = E67133F02AF334C2009F0595 /* MongoKitten */; };
 		E67252A42AE793FE003443F9 /* LMMultiplayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = E67252A32AE793FE003443F9 /* LMMultiplayer.mm */; };
 		E67252A72AE79879003443F9 /* LMDirectConnectController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E67252A62AE79879003443F9 /* LMDirectConnectController.swift */; };
 		E6750B3C2AE304F00088C05F /* string_util.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E67507682AE304F00088C05F /* string_util.cpp */; };
@@ -563,6 +568,7 @@
 		E65E97302ACFB2E0004FD046 /* libcryptopp.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libcryptopp.xcframework; sourceTree = "<group>"; };
 		E65F66F72AE8E4D100C851DD /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libMoltenVK.dylib; sourceTree = "<group>"; };
 		E65F66FA2AE8EC7100C851DD /* glslang.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = glslang.xcframework; sourceTree = "<group>"; };
+		E67133E72AF331D1009F0595 /* LMMultiplayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LMMultiplayer.swift; sourceTree = "<group>"; };
 		E67252A22AE793FE003443F9 /* LMMultiplayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LMMultiplayer.h; sourceTree = "<group>"; };
 		E67252A32AE793FE003443F9 /* LMMultiplayer.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = LMMultiplayer.mm; sourceTree = "<group>"; };
 		E67252A62AE79879003443F9 /* LMDirectConnectController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LMDirectConnectController.swift; sourceTree = "<group>"; };
@@ -967,10 +973,12 @@
 				E65E978B2ACFB2E2004FD046 /* boost_program_options.xcframework in Frameworks */,
 				E65E97832ACFB2E2004FD046 /* libsirit.xcframework in Frameworks */,
 				E65E97972ACFB2E2004FD046 /* libcryptopp.xcframework in Frameworks */,
+				E67133EF2AF334C2009F0595 /* MongoCore in Frameworks */,
 				E6B7AD1D2ACFE48A00859FC3 /* GameController.framework in Frameworks */,
 				E65E978E2ACFB2E2004FD046 /* libenet.xcframework in Frameworks */,
 				E65F66F82AE8E4D100C851DD /* libMoltenVK.dylib in Frameworks */,
 				E6DFA8112AE30E2400795923 /* libdynarmic.xcframework in Frameworks */,
+				E67133F12AF334C2009F0595 /* MongoKitten in Frameworks */,
 				E6B7AD1B2ACFE46F00859FC3 /* AVFAudio.framework in Frameworks */,
 				E6E885D92ACFB98400A2AAAD /* OpenSSL in Frameworks */,
 				E65E97852ACFB2E2004FD046 /* libfdk-aac.xcframework in Frameworks */,
@@ -985,10 +993,12 @@
 				E6B7AD232ACFE4F500859FC3 /* CoreAudio.framework in Frameworks */,
 				E6B7AD252ACFE50E00859FC3 /* AudioToolbox.framework in Frameworks */,
 				E65E97822ACFB2E2004FD046 /* libOpenAL.xcframework in Frameworks */,
+				E67133ED2AF334C2009F0595 /* MongoClient in Frameworks */,
 				E65E97962ACFB2E2004FD046 /* libSoundTouch.xcframework in Frameworks */,
 				E6B7AD2E2ACFE88E00859FC3 /* libavutil.xcframework in Frameworks */,
 				E6DFA8172AE3117200795923 /* libmcl.xcframework in Frameworks */,
 				E65E978F2ACFB2E2004FD046 /* boost_iostreams.xcframework in Frameworks */,
+				E67133EB2AF334C2009F0595 /* Meow in Frameworks */,
 				E6B7AD2A2ACFE88E00859FC3 /* libavfilter.xcframework in Frameworks */,
 				E65E97882ACFB2E2004FD046 /* libSDL2.xcframework in Frameworks */,
 				E6E885DF2ACFBA3400A2AAAD /* Toast in Frameworks */,
@@ -1149,12 +1159,12 @@
 				E6B7AD352ACFF06200859FC3 /* Controllers */,
 				E65E54622ACFB2CF004FD046 /* Dependencies */,
 				E6E196DC2AD3A6220057C3B3 /* Extensions */,
-				E65E54602ACFA9D4004FD046 /* Limon.entitlements */,
 				E65E544C2ACFA5C5004FD046 /* AppDelegate.swift */,
 				E65E544E2ACFA5C5004FD046 /* SceneDelegate.swift */,
 				E65E54552ACFA5C7004FD046 /* Assets.xcassets */,
-				E65E54572ACFA5C7004FD046 /* LaunchScreen.storyboard */,
 				E65E545A2ACFA5C7004FD046 /* Info.plist */,
+				E65E54572ACFA5C7004FD046 /* LaunchScreen.storyboard */,
+				E65E54602ACFA9D4004FD046 /* Limon.entitlements */,
 				E6B7AD372ACFF11900859FC3 /* Limon-Bridging-Header.h */,
 			);
 			path = Limon;
@@ -2349,6 +2359,7 @@
 			children = (
 				E6E196DD2AD3A6310057C3B3 /* UIApplication.swift */,
 				E621F1632AD3BE8F00159D40 /* UIViewController.swift */,
+				E67133E72AF331D1009F0595 /* LMMultiplayer.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -2475,6 +2486,10 @@
 				E6E885D52ACFB95300A2AAAD /* libzstd */,
 				E6E885D82ACFB98400A2AAAD /* OpenSSL */,
 				E6E885DE2ACFBA3400A2AAAD /* Toast */,
+				E67133EA2AF334C2009F0595 /* Meow */,
+				E67133EC2AF334C2009F0595 /* MongoClient */,
+				E67133EE2AF334C2009F0595 /* MongoCore */,
+				E67133F02AF334C2009F0595 /* MongoKitten */,
 			);
 			productName = Limon;
 			productReference = E65E54492ACFA5C5004FD046 /* Limon.app */;
@@ -2507,6 +2522,7 @@
 			packageReferences = (
 				E6E885D42ACFB95300A2AAAD /* XCRemoteSwiftPackageReference "zstd" */,
 				E6E885D72ACFB98400A2AAAD /* XCRemoteSwiftPackageReference "OpenSSL" */,
+				E67133E92AF334C2009F0595 /* XCRemoteSwiftPackageReference "MongoKitten" */,
 			);
 			productRefGroup = E65E544A2ACFA5C5004FD046 /* Products */;
 			projectDirPath = "";
@@ -2748,6 +2764,7 @@
 				E6750B832AE304F00088C05F /* am_sys.cpp in Sources */,
 				E6750CB32AE304F10088C05F /* network.cpp in Sources */,
 				E6750BB72AE304F00088C05F /* news_u.cpp in Sources */,
+				E67133E82AF331D1009F0595 /* LMMultiplayer.swift in Sources */,
 				E6750B9F2AE304F00088C05F /* frd.cpp in Sources */,
 				E6750B512AE304F00088C05F /* memory_ref.cpp in Sources */,
 				E61537A92AD3CEC1005053B9 /* LMInputManager.mm in Sources */,
@@ -3115,7 +3132,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -3124,7 +3141,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Limon/Dependencies/dylibs",
 				);
-				MARKETING_VERSION = 1.0.8.2;
+				MARKETING_VERSION = 1.0.8.3;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.antique.Limon;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -3169,7 +3186,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -3178,7 +3195,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Limon/Dependencies/dylibs",
 				);
-				MARKETING_VERSION = 1.0.8.2;
+				MARKETING_VERSION = 1.0.8.3;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.antique.Limon;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -3217,6 +3234,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		E67133E92AF334C2009F0595 /* XCRemoteSwiftPackageReference "MongoKitten" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/orlandos-nl/MongoKitten";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 7.7.2;
+			};
+		};
 		E6E885D42ACFB95300A2AAAD /* XCRemoteSwiftPackageReference "zstd" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/facebook/zstd";
@@ -3236,6 +3261,26 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		E67133EA2AF334C2009F0595 /* Meow */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E67133E92AF334C2009F0595 /* XCRemoteSwiftPackageReference "MongoKitten" */;
+			productName = Meow;
+		};
+		E67133EC2AF334C2009F0595 /* MongoClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E67133E92AF334C2009F0595 /* XCRemoteSwiftPackageReference "MongoKitten" */;
+			productName = MongoClient;
+		};
+		E67133EE2AF334C2009F0595 /* MongoCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E67133E92AF334C2009F0595 /* XCRemoteSwiftPackageReference "MongoKitten" */;
+			productName = MongoCore;
+		};
+		E67133F02AF334C2009F0595 /* MongoKitten */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E67133E92AF334C2009F0595 /* XCRemoteSwiftPackageReference "MongoKitten" */;
+			productName = MongoKitten;
+		};
 		E6E885D52ACFB95300A2AAAD /* libzstd */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = E6E885D42ACFB95300A2AAAD /* XCRemoteSwiftPackageReference "zstd" */;
