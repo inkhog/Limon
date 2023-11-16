@@ -157,7 +157,7 @@ ShaderEngine* GetEngine() {
         }
         return jit_engine.get();
     }
-#endif
+#endif // CITRA_ARCH(x86_64) || CITRA_ARCH(arm64)
 
     return &interpreter_engine;
 }
@@ -165,7 +165,7 @@ ShaderEngine* GetEngine() {
 void Shutdown() {
 #if CITRA_ARCH(x86_64) || CITRA_ARCH(arm64)
     jit_engine = nullptr;
-#endif
+#endif // CITRA_ARCH(x86_64) || CITRA_ARCH(arm64)
 }
 
 } // namespace Pica::Shader

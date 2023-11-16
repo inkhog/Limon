@@ -15,8 +15,12 @@
 #include "video_core/renderer_vulkan/vk_renderpass_cache.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
+#include "video_core/shader/generator/glsl_fs_shader_gen.h"
+#include "video_core/shader/generator/glsl_shader_gen.h"
+#include "video_core/shader/generator/spv_fs_shader_gen.h"
 
 using namespace Pica::Shader::Generator;
+using Pica::Shader::FSConfig;
 
 MICROPROFILE_DEFINE(Vulkan_Bind, "Vulkan", "Pipeline Bind", MP_RGB(192, 32, 32));
 
@@ -86,6 +90,18 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
       trivial_vertex_shader{
           instance, vk::ShaderStageFlagBits::eVertex,
           GLSL::GenerateTrivialVertexShader(instance.IsShaderClipDistanceSupported(), true)} {
+    profile = Pica::Shader::Profile{
+        .has_separable_shaders = true,
+        .has_clip_planes = instance.IsShaderClipDistanceSupported(),
+        .has_geometry_shader = instance.UseGeometryShaders(),
+        .has_custom_border_color = instance.IsCustomBorderColorSupported(),
+        .has_fragment_shader_interlock = instance.IsFragmentShaderInterlockSupported(),
+        .has_fragment_shader_barycentric = instance.IsFragmentShaderBarycentricSupported(),
+        .has_blend_minmax_factor = false,
+        .has_minus_one_to_one_range = false,
+        .has_logic_op = !instance.NeedsLogicOpEmulation(),
+        .is_vulkan = true,
+    };
     BuildLayout();
 }
 
@@ -189,23 +205,85 @@ bool PipelineCache::BindPipeline(const PipelineInfo& info, bool wait_built) {
         return false;
     }
 
-    for (u32 i = 0; i < NUM_RASTERIZER_SETS; i++) {
-        if (!set_dirty[i]) {
-            continue;
-        }
-        bound_descriptor_sets[i] = descriptor_set_providers[i].Acquire(update_data[i]);
-        set_dirty[i] = false;
+    u32 new_descriptors_start = 0;
+    std::span<vk::DescriptorSet> new_descriptors_span{};
+    std::span<u32> new_offsets_span{};
+
+    // Ensure all the descriptor sets are set at least once at the beginning.
+    if (scheduler.IsStateDirty(StateFlags::DescriptorSets)) {
+        set_dirty.set();
     }
+
+    if (set_dirty.any()) {
+        for (u32 i = 0; i < NUM_RASTERIZER_SETS; i++) {
+            if (!set_dirty.test(i)) {
+                continue;
+            }
+            bound_descriptor_sets[i] = descriptor_set_providers[i].Acquire(update_data[i]);
+        }
+        new_descriptors_span = bound_descriptor_sets;
+
+        // Only send new offsets if the buffer descriptor-set changed.
+        if (set_dirty.test(0)) {
+            new_offsets_span = offsets;
+        }
+
+        // Try to compact the number of updated descriptor-set slots to the ones that have actually
+        // changed
+        if (!set_dirty.all()) {
+            const u64 dirty_mask = set_dirty.to_ulong();
+            new_descriptors_start = static_cast<u32>(std::countr_zero(dirty_mask));
+            const u32 new_descriptors_end = 64u - static_cast<u32>(std::countl_zero(dirty_mask));
+            const u32 new_descriptors_size = new_descriptors_end - new_descriptors_start;
+
+            new_descriptors_span =
+                new_descriptors_span.subspan(new_descriptors_start, new_descriptors_size);
+        }
+
+        set_dirty.reset();
+    }
+
+    boost::container::static_vector<vk::DescriptorSet, NUM_RASTERIZER_SETS> new_descriptors(
+        new_descriptors_span.begin(), new_descriptors_span.end());
+    boost::container::static_vector<u32, NUM_DYNAMIC_OFFSETS> new_offsets(new_offsets_span.begin(),
+                                                                          new_offsets_span.end());
 
     const bool is_dirty = scheduler.IsStateDirty(StateFlags::Pipeline);
     const bool pipeline_dirty = (current_pipeline != pipeline) || is_dirty;
     scheduler.Record([this, is_dirty, pipeline_dirty, pipeline,
                       current_dynamic = current_info.dynamic, dynamic = info.dynamic,
-                      descriptor_sets = bound_descriptor_sets, offsets = offsets,
+                      new_descriptors_start, descriptor_sets = std::move(new_descriptors),
+                      offsets = std::move(new_offsets),
                       current_rasterization = current_info.rasterization,
                       current_depth_stencil = current_info.depth_stencil,
                       rasterization = info.rasterization,
                       depth_stencil = info.depth_stencil](vk::CommandBuffer cmdbuf) {
+        if (dynamic.viewport != current_dynamic.viewport || is_dirty) {
+            const vk::Viewport vk_viewport = {
+                .x = static_cast<f32>(dynamic.viewport.left),
+                .y = static_cast<f32>(dynamic.viewport.top),
+                .width = static_cast<f32>(dynamic.viewport.GetWidth()),
+                .height = static_cast<f32>(dynamic.viewport.GetHeight()),
+                .minDepth = 0.f,
+                .maxDepth = 1.f,
+            };
+            cmdbuf.setViewport(0, vk_viewport);
+        }
+
+        if (dynamic.scissor != current_dynamic.scissor || is_dirty) {
+            const vk::Rect2D scissor = {
+                .offset{
+                    .x = static_cast<s32>(dynamic.scissor.left),
+                    .y = static_cast<s32>(dynamic.scissor.bottom),
+                },
+                .extent{
+                    .width = dynamic.scissor.GetWidth(),
+                    .height = dynamic.scissor.GetHeight(),
+                },
+            };
+            cmdbuf.setScissor(0, scissor);
+        }
+
         if (dynamic.stencil_compare_mask != current_dynamic.stencil_compare_mask || is_dirty) {
             cmdbuf.setStencilCompareMask(vk::StencilFaceFlagBits::eFrontAndBack,
                                          dynamic.stencil_compare_mask);
@@ -276,13 +354,16 @@ bool PipelineCache::BindPipeline(const PipelineInfo& info, bool wait_built) {
             }
             cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
         }
-        cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0,
-                                  descriptor_sets, offsets);
+
+        if (descriptor_sets.size()) {
+            cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline_layout,
+                                      new_descriptors_start, descriptor_sets, offsets);
+        }
     });
 
     current_info = info;
     current_pipeline = pipeline;
-    scheduler.MarkStateNonDirty(StateFlags::Pipeline);
+    scheduler.MarkStateNonDirty(StateFlags::Pipeline | StateFlags::DescriptorSets);
 
     return true;
 }
@@ -290,8 +371,13 @@ bool PipelineCache::BindPipeline(const PipelineInfo& info, bool wait_built) {
 bool PipelineCache::UseProgrammableVertexShader(const Pica::Regs& regs,
                                                 Pica::Shader::ShaderSetup& setup,
                                                 const VertexLayout& layout) {
-    PicaVSConfig config{regs, setup, instance.IsShaderClipDistanceSupported(),
-                        instance.UseGeometryShaders()};
+    // Enable the geometry-shader only if we are actually doing per-fragment lighting
+    // and care about proper quaternions. Otherwise just use standard vertex+fragment shaders.
+    // We also don't need the geometry shader if we have the barycentric extension.
+    const bool use_geometry_shader = instance.UseGeometryShaders() && !regs.lighting.disable &&
+                                     !instance.IsFragmentShaderBarycentricSupported();
+
+    PicaVSConfig config{regs, setup, instance.IsShaderClipDistanceSupported(), use_geometry_shader};
 
     for (u32 i = 0; i < layout.attribute_count; i++) {
         const VertexAttribute& attr = layout.attributes[i];
@@ -377,35 +463,30 @@ void PipelineCache::UseTrivialGeometryShader() {
     shader_hashes[ProgramType::GS] = 0;
 }
 
-void PipelineCache::UseFragmentShader(const Pica::Regs& regs) {
-    const PicaFSConfig config{regs, instance.IsFragmentShaderInterlockSupported(),
-                              instance.NeedsLogicOpEmulation(),
-                              !instance.IsCustomBorderColorSupported(), false};
-
-    const auto [it, new_shader] = fragment_shaders.try_emplace(config, instance);
+void PipelineCache::UseFragmentShader(const Pica::Regs& regs,
+                                      const Pica::Shader::UserConfig& user) {
+    const FSConfig fs_config{regs, user, profile};
+    const auto [it, new_shader] = fragment_shaders.try_emplace(fs_config, instance);
     auto& shader = it->second;
 
     if (new_shader) {
         const bool use_spirv = Settings::values.spirv_shader_gen.GetValue();
-        const auto texture0_type = config.state.texture0_type.Value();
-        const bool is_shadow = texture0_type == Pica::TexturingRegs::TextureConfig::Shadow2D ||
-                               texture0_type == Pica::TexturingRegs::TextureConfig::ShadowCube ||
-                               config.state.shadow_rendering.Value();
-        if (use_spirv && !is_shadow) {
-            const std::vector code = SPIRV::GenerateFragmentShader(config);
+        if (use_spirv && !fs_config.UsesShadowPipeline()) {
+            const std::vector code = SPIRV::GenerateFragmentShader(fs_config, profile);
             shader.module = CompileSPV(code, instance.GetDevice());
             shader.MarkDone();
         } else {
-            workers.QueueWork([config, device = instance.GetDevice(), &shader]() {
-                const std::string code = GLSL::GenerateFragmentShader(config, true);
-                shader.module = Compile(code, vk::ShaderStageFlagBits::eFragment, device);
+            workers.QueueWork([fs_config, this, &shader]() {
+                const std::string code = GLSL::GenerateFragmentShader(fs_config, profile);
+                shader.module =
+                    Compile(code, vk::ShaderStageFlagBits::eFragment, instance.GetDevice());
                 shader.MarkDone();
             });
         }
     }
 
     current_shaders[ProgramType::FS] = &shader;
-    shader_hashes[ProgramType::FS] = config.Hash();
+    shader_hashes[ProgramType::FS] = fs_config.Hash();
 }
 
 void PipelineCache::BindTexture(u32 binding, vk::ImageView image_view, vk::Sampler sampler) {
@@ -455,7 +536,10 @@ void PipelineCache::BindTexelBuffer(u32 binding, vk::BufferView buffer_view) {
 }
 
 void PipelineCache::SetBufferOffset(u32 binding, size_t offset) {
-    offsets[binding] = static_cast<u32>(offset);
+    if (offsets[binding] != static_cast<u32>(offset)) {
+        offsets[binding] = static_cast<u32>(offset);
+        set_dirty[0] = true;
+    }
 }
 
 bool PipelineCache::IsCacheValid(std::span<const u8> data) const {

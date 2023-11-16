@@ -9,7 +9,7 @@ import Foundation
 import UIKit
 
 extension LMEmulationController {
-    fileprivate func reloadInGameSettingsMenu() {
+    func reloadInGameSettingsMenu() {
         Task {
             inGameSettingsButton.menu = inGameSettingsMenu()
         }

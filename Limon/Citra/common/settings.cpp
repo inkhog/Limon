@@ -27,12 +27,8 @@ std::string_view GetAudioEmulationName(AudioEmulation emulation) {
 
 std::string_view GetGraphicsAPIName(GraphicsAPI api) {
     switch (api) {
-    case GraphicsAPI::Software:
-        return "Software";
     case GraphicsAPI::Vulkan:
         return "Vulkan";
-    default:
-        return "Invalid";
     }
 }
 

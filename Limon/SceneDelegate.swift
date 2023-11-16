@@ -32,23 +32,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         let welcomeController = OBWelcomeController(title: "What's New", detailText: "See what's been added, changed, fixed or removed in the latest version of Limón",
                                                     icon: .init(systemName: "app.badge.fill")?.applyingSymbolConfiguration(.init(paletteColors: [.systemRed, .tintColor])))
-        welcomeController.set_shouldInlineButtontray(true)
+        // welcomeController.set_shouldInlineButtontray(true)
         
-        welcomeController.addBulletedListItem(withTitle: "Added Full iOS 15 Support",
-                                              description: "Added version checks for iOS 16 and above allowing for iOS 15 support to be implemented",
-                                              image: .init(systemName: "pause.rectangle.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Added Custom Menu Sound Support",
-                                              description: "Added the ability to have custom menu music play when browsing the game library: add menu.mp3 to sounds/",
-                                              image: .init(systemName: "music.quarternote.3"))
-        welcomeController.addBulletedListItem(withTitle: "Fixed Landscape Touch Detection",
-                                              description: "Fixed an issue where touches on the bottom screen would misaligned from the location of the touch",
-                                              image: .init(systemName: "hand.tap.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Fixed Multiplayer Direct Connect",
-                                              description: "Fixed an issue where the entered port was not being set",
-                                              image: .init(systemName: "person.line.dotted.person.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Fixed Import CIA",
-                                              description: "Fixed an issue where the app would crash when tapping Import CIA",
-                                              image: .init(systemName: "arrow.down.doc.fill"))
+        
+        welcomeController.addBulletedListItem(withTitle: "Fixed Menu Music Crash", description: "Fixed a crash that occurred when no menu.mp3 is available",
+                                              image: .init(systemName: "speaker.wave.3.fill"))
+        welcomeController.addBulletedListItem(withTitle: "Fixed Async Shader Presentation", description: "Fixed an an issue where Async Shader Presentation would not set correctly",
+                                              image: .init(systemName: "moonphase.first.quarter"))
+        welcomeController.addBulletedListItem(withTitle: "Improved Out-Of-Game Settings Menu", description: "Improved how the out-of-game settings menu is displayed making it easier to follow and understand",
+                                              image: .init(systemName: "gearshape.fill"))
         
         
         var acknowledgeButtonConfiguration = UIButton.Configuration.filled()
@@ -81,7 +73,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         })))
         welcomeController.buttonTray.setCaptionText("v\(version) (\(build))", style: 0)
         
-        UserDefaults.standard.removeObject(forKey: "acknowledgedWhatsNew_\(version).\(build)")
+        // UserDefaults.standard.removeObject(forKey: "acknowledgedWhatsNew_\(version).\(build)")
         window.rootViewController = UserDefaults.standard.bool(forKey: "dontShowWhatsNewAgain") ? LMLoadingController() : UserDefaults.standard.bool(forKey: "acknowledgedWhatsNew_\(version).\(build)") ? LMLoadingController() : welcomeController
         window.tintColor = .systemYellow
         window.makeKeyAndVisible()
@@ -98,6 +90,25 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         } catch {
             print(error.localizedDescription)
         }
+        
+        let foldersNames = ["cheats", "config", "log", "nand", "roms", "sdmc", "shaders", "sounds", "states", "sysdata"]
+        foldersNames.forEach { folderName in
+            let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(folderName, conformingTo: .folder)
+            if !FileManager.default.fileExists(atPath: url.path) {
+                do {
+                    try FileManager.default.createDirectory(atPath: url.path, withIntermediateDirectories: false)
+                } catch {
+                    print(error.localizedDescription)
+                }
+            }
+        }
+        
+        
+        let thread = Thread {
+            
+        }
+        thread.start()
+        thread.cancel()
     }
     
     func sceneDidDisconnect(_ scene: UIScene) {
@@ -127,6 +138,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Use this method to save data, release shared resources, and store enough scene-specific state information
         // to restore the scene back to its current state.
         LMCitra.shared().pause()
+        NotificationCenter.default.post(name: .init("sceneDidEnterBackground"), object: nil)
     }
     
     
@@ -161,12 +173,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         UserDefaults.standard.set(true, forKey: "spirvShaderGen")
         UserDefaults.standard.set(false, forKey: "asyncShaderCompilation")
-        UserDefaults.standard.set(true, forKey: "asyncPresentation")
+        UserDefaults.standard.set(true, forKey: "asyncShaderPresentation")
         UserDefaults.standard.set(true, forKey: "useHWShader")
         UserDefaults.standard.set(true, forKey: "useDiskShaderCache")
         UserDefaults.standard.set(true, forKey: "shadersAccurateMul")
         UserDefaults.standard.set(true, forKey: "useNewVSync")
-        UserDefaults.standard.set(true, forKey: "useShaderJIT")
+        UserDefaults.standard.set(false, forKey: "useShaderJIT")
         UserDefaults.standard.set(1, forKey: "resolutionFactor")
         UserDefaults.standard.set(100, forKey: "frameLimit")
         UserDefaults.standard.set(0, forKey: "textureFilter")

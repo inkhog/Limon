@@ -11,7 +11,9 @@
 #include "network/network.h"
 #include "network/network_settings.h"
 
+#ifdef ENABLE_WEB_SERVICE
 #include "web_service/announce_room_json.h"
+#endif
 
 namespace Network {
 
@@ -19,9 +21,13 @@ namespace Network {
 static constexpr std::chrono::seconds announce_time_interval(15);
 
 AnnounceMultiplayerSession::AnnounceMultiplayerSession() {
+#ifdef ENABLE_WEB_SERVICE
     backend = std::make_unique<WebService::RoomJson>(NetSettings::values.web_api_url,
                                                      NetSettings::values.citra_username,
                                                      NetSettings::values.citra_token);
+#else
+    backend = std::make_unique<AnnounceMultiplayerRoom::NullBackend>();
+#endif
 }
 
 Common::WebResult AnnounceMultiplayerSession::Register() {
@@ -148,9 +154,11 @@ bool AnnounceMultiplayerSession::IsRunning() const {
 void AnnounceMultiplayerSession::UpdateCredentials() {
     ASSERT_MSG(!IsRunning(), "Credentials can only be updated when session is not running");
 
+#ifdef ENABLE_WEB_SERVICE
     backend = std::make_unique<WebService::RoomJson>(NetSettings::values.web_api_url,
                                                      NetSettings::values.citra_username,
                                                      NetSettings::values.citra_token);
+#endif
 }
 
 } // namespace Network

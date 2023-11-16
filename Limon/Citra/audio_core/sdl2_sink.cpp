@@ -4,7 +4,7 @@
 
 #include <string>
 #include <vector>
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include "audio_core/audio_types.h"
 #include "audio_core/sdl2_sink.h"
 #include "common/assert.h"
@@ -23,7 +23,6 @@ struct SDL2Sink::Impl {
 };
 
 SDL2Sink::SDL2Sink(std::string device_name) : impl(std::make_unique<Impl>()) {
-    SDL_SetMainReady();
     if (SDL_Init(SDL_INIT_AUDIO) < 0) {
         LOG_CRITICAL(Audio_Sink, "SDL_Init(SDL_INIT_AUDIO) failed with: {}", SDL_GetError());
         impl->audio_device_id = 0;

@@ -1,9 +1,6 @@
-//
-//  shader_jit_a64.cpp
-//  Limon
-//
-//  Created by Jarrod Norwell on 10/21/23.
-//
+// Copyright 2023 Citra Emulator Project
+// Licensed under GPLv2 or any later version
+// Refer to the license.txt file included.
 
 #include "common/arch.h"
 #if CITRA_ARCH(arm64)

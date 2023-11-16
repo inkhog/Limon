@@ -150,7 +150,7 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
     
     Settings::values.spirv_shader_gen.SetValue(EmulationSettings.spirvShaderGen);
     Settings::values.async_shader_compilation.SetValue(EmulationSettings.asyncShaderCompilation);
-    Settings::values.async_presentation.SetValue(EmulationSettings.asyncPresentation);
+    Settings::values.async_presentation.SetValue(EmulationSettings.asyncShaderPresentation);
     Settings::values.use_hw_shader.SetValue(EmulationSettings.useHWShader);
     Settings::values.use_disk_shader_cache.SetValue(EmulationSettings.useDiskShaderCache);
     Settings::values.shaders_accurate_mul.SetValue(EmulationSettings.shadersAccurateMul);
@@ -332,7 +332,7 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
 }
 
 -(void) load {
-    Core::LoadState([_savePath.path UTF8String]);
+    //Core::LoadState([_savePath.path UTF8String]);
     
     _isLoading = FALSE;
     _isPaused = FALSE;
@@ -349,7 +349,7 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
         [[NSFileManager defaultManager] createDirectoryAtPath:saveStateForGameFolder.path withIntermediateDirectories:FALSE attributes:NULL error:NULL];
     }
     
-    Core::SaveState([[saveStateForGameFolder URLByAppendingPathComponent:[NSUUID UUID].UUIDString].path UTF8String], title_id);
+    //Core::SaveState([[saveStateForGameFolder URLByAppendingPathComponent:[NSUUID UUID].UUIDString].path UTF8String], title_id);
     
     _isSaving = FALSE;
     _isPaused = FALSE;

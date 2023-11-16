@@ -3,8 +3,7 @@
 // Refer to the license.txt file included.
 
 #include <memory>
-#define CPPHTTPLIB_OPENSSL_SUPPORT
-#include <httplib/httplib.h>
+#include <httplib.h>
 #include "common/logging/log.h"
 #include "core/nus_download.h"
 

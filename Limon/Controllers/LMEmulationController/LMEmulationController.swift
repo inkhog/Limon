@@ -87,6 +87,7 @@ class LMEmulationController : UIViewController {
         if !citra().isRunning() {
             citra().setMetalLayer(screenView.screen.layer as! CAMetalLayer)
             Thread.detachNewThread {
+                print("here")
                 self.citra().run()
             }
         }
@@ -96,6 +97,8 @@ class LMEmulationController : UIViewController {
         super.viewWillDisappear(animated)
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name.GCControllerDidConnect, object: nil)
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name.GCControllerDidDisconnect, object: nil)
+        
+        NotificationCenter.default.removeObserver(self, name: .init("sceneDidEnterBackground"), object: nil)
         
         NotificationCenter.default.removeObserver(self, name: .init("onRoomStateChanged"), object: nil)
     }
@@ -175,6 +178,10 @@ class LMEmulationController : UIViewController {
     fileprivate func registerControllerNotifications() {
         NotificationCenter.default.addObserver(forName: NSNotification.Name.GCControllerDidConnect, object: nil, queue: .main, using: physicalControllerDidConnect(_:))
         NotificationCenter.default.addObserver(forName: NSNotification.Name.GCControllerDidDisconnect, object: nil, queue: .main, using: physicalControllerDidDisconnect(_:))
+        
+        NotificationCenter.default.addObserver(forName: .init("sceneDidEnterBackground"), object: nil, queue: .main) { _ in
+            self.reloadInGameSettingsMenu()
+        }
         
         NotificationCenter.default.addObserver(forName: .init("onRoomStateChanged"), object: nil, queue: .main, using: onRoomStateChanged(_:))
     }

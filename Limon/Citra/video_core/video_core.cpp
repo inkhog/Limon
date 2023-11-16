@@ -11,7 +11,6 @@
 #include "video_core/pica.h"
 #include "video_core/pica_state.h"
 #include "video_core/renderer_base.h"
-#include "video_core/renderer_software/renderer_software.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 #include "video_core/video_core.h"
 
@@ -31,18 +30,7 @@ void Init(Frontend::EmuWindow& emu_window, Frontend::EmuWindow* secondary_window
     g_memory = &system.Memory();
     Pica::Init();
 
-    const Settings::GraphicsAPI graphics_api = Settings::values.graphics_api.GetValue();
-    switch (graphics_api) {
-    case Settings::GraphicsAPI::Software:
-        g_renderer = std::make_unique<SwRenderer::RendererSoftware>(system, emu_window);
-        break;
-    case Settings::GraphicsAPI::Vulkan:
-        g_renderer = std::make_unique<Vulkan::RendererVulkan>(system, emu_window, secondary_window);
-        break;
-    default:
-        LOG_CRITICAL(Render, "Unknown graphics API {}, using Vulkan", graphics_api);
-        g_renderer = std::make_unique<Vulkan::RendererVulkan>(system, emu_window, secondary_window);
-    }
+    g_renderer = std::make_unique<Vulkan::RendererVulkan>(system, emu_window, secondary_window);
 }
 
 /// Shutdown the video core

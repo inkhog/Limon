@@ -2,9 +2,10 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
-#include "core/core.h"
-#include "core/telemetry_session.h"
-#include "video_core/shader/generator/spv_shader_gen.h"
+#include <boost/container/small_vector.hpp>
+#include "video_core/shader/generator/spv_fs_shader_gen.h"
+
+namespace Pica::Shader::Generator::SPIRV {
 
 using Pica::FramebufferRegs;
 using Pica::LightingRegs;
@@ -12,12 +13,12 @@ using Pica::RasterizerRegs;
 using Pica::TexturingRegs;
 using TevStageConfig = TexturingRegs::TevStageConfig;
 
-namespace Pica::Shader::Generator::SPIRV {
-
 constexpr u32 SPIRV_VERSION_1_3 = 0x00010300;
 
-FragmentModule::FragmentModule(Core::TelemetrySession& telemetry_, const PicaFSConfig& config_)
-    : Sirit::Module{SPIRV_VERSION_1_3}, telemetry{telemetry_}, config{config_} {
+FragmentModule::FragmentModule(const FSConfig& config_, const Profile& profile_)
+    : Sirit::Module{SPIRV_VERSION_1_3}, config{config_}, profile{profile_},
+      use_fragment_shader_barycentric{profile.has_fragment_shader_barycentric &&
+                                      config.lighting.enable} {
     DefineArithmeticTypes();
     DefineUniformStructs();
     DefineInterface();
@@ -37,38 +38,32 @@ void FragmentModule::Generate() {
     secondary_fragment_color = ConstF32(0.f, 0.f, 0.f, 0.f);
 
     // Do not do any sort of processing if it's obvious we're not going to pass the alpha test
-    if (config.state.alpha_test_func == Pica::FramebufferRegs::CompareFunc::Never) {
+    if (config.framebuffer.alpha_test_func == Pica::FramebufferRegs::CompareFunc::Never) {
         OpKill();
         OpFunctionEnd();
         return;
     }
 
-    // Check if the fragment is outside scissor rectangle
+    // Append the scissor and depth tests
+    WriteDepth();
     WriteScissor();
 
     // Write shader bytecode to emulate all enabled PICA lights
-    if (config.state.lighting.enable) {
-        WriteLighting();
-    }
+    WriteLighting();
 
     combiner_buffer = ConstF32(0.f, 0.f, 0.f, 0.f);
     next_combiner_buffer = GetShaderDataMember(vec_ids.Get(4), ConstS32(26));
     last_tex_env_out = rounded_primary_color;
 
     // Write shader bytecode to emulate PICA TEV stages
-    for (std::size_t index = 0; index < config.state.tev_stages.size(); ++index) {
-        WriteTevStage(static_cast<s32>(index));
+    for (u32 index = 0; index < config.texture.tev_stages.size(); ++index) {
+        WriteTevStage(index);
     }
 
-    WriteAlphaTestCondition(config.state.alpha_test_func);
-
-    // After perspective divide, OpenGL transform z_over_w from [-1, 1] to [near, far]. Here we use
-    // default near = 0 and far = 1, and undo the transformation to get the original z_over_w, then
-    // do our own transformation according to PICA specification.
-    WriteDepth();
+    WriteAlphaTestCondition(config.framebuffer.alpha_test_func);
 
     // Emulate the fog
-    switch (config.state.fog_mode) {
+    switch (config.texture.fog_mode) {
     case TexturingRegs::FogMode::Fog:
         WriteFog();
         break;
@@ -80,29 +75,27 @@ void FragmentModule::Generate() {
     }
 
     Id color{Byteround(last_tex_env_out, 4)};
-    if (config.state.emulate_logic_op) {
-        switch (config.state.logic_op) {
-        case FramebufferRegs::LogicOp::Clear:
-            color = ConstF32(0.f, 0.f, 0.f, 0.f);
-            break;
-        case FramebufferRegs::LogicOp::Set:
-            color = ConstF32(1.f, 1.f, 1.f, 1.f);
-            break;
-        case FramebufferRegs::LogicOp::Copy:
-            // Take the color output as-is
-            break;
-        case FramebufferRegs::LogicOp::CopyInverted:
-            // out += "color = ~color;\n";
-            break;
-        case FramebufferRegs::LogicOp::NoOp:
-            // We need to discard the color, but not necessarily the depth. This is not possible
-            // with fragment shader alone, so we emulate this behavior with the color mask.
-            break;
-        default:
-            LOG_CRITICAL(HW_GPU, "Unhandled logic_op {:x}",
-                         static_cast<u32>(config.state.logic_op.Value()));
-            UNIMPLEMENTED();
-        }
+    switch (config.framebuffer.logic_op) {
+    case FramebufferRegs::LogicOp::Clear:
+        color = ConstF32(0.f, 0.f, 0.f, 0.f);
+        break;
+    case FramebufferRegs::LogicOp::Set:
+        color = ConstF32(1.f, 1.f, 1.f, 1.f);
+        break;
+    case FramebufferRegs::LogicOp::Copy:
+        // Take the color output as-is
+        break;
+    case FramebufferRegs::LogicOp::CopyInverted:
+        // out += "color = ~color;\n";
+        break;
+    case FramebufferRegs::LogicOp::NoOp:
+        // We need to discard the color, but not necessarily the depth. This is not possible
+        // with fragment shader alone, so we emulate this behavior with the color mask.
+        break;
+    default:
+        LOG_CRITICAL(HW_GPU, "Unhandled logic_op {:x}",
+                     static_cast<u32>(config.framebuffer.logic_op.Value()));
+        UNIMPLEMENTED();
     }
 
     // Write output color
@@ -119,7 +112,7 @@ void FragmentModule::WriteDepth() {
     const Id depth_scale{GetShaderDataMember(f32_id, ConstS32(2))};
     const Id depth_offset{GetShaderDataMember(f32_id, ConstS32(3))};
     depth = OpFma(f32_id, z_over_w, depth_scale, depth_offset);
-    if (config.state.depthmap_enable == Pica::RasterizerRegs::DepthBuffering::WBuffering) {
+    if (config.framebuffer.depthmap_enable == Pica::RasterizerRegs::DepthBuffering::WBuffering) {
         const Id gl_frag_coord_w{
             OpLoad(f32_id, OpAccessChain(input_pointer_id, gl_frag_coord_id, ConstU32(3u)))};
         depth = OpFDiv(f32_id, depth, gl_frag_coord_w);
@@ -128,7 +121,7 @@ void FragmentModule::WriteDepth() {
 }
 
 void FragmentModule::WriteScissor() {
-    if (config.state.scissor_test_mode == RasterizerRegs::ScissorMode::Disabled) {
+    if (config.framebuffer.scissor_test_mode == RasterizerRegs::ScissorMode::Disabled) {
         return;
     }
 
@@ -149,7 +142,7 @@ void FragmentModule::WriteScissor() {
     const Id cond2{OpFOrdLessThan(bvec_ids.Get(2), gl_frag_coord_xy, scissor_2)};
 
     Id result{OpAll(bool_id, OpCompositeConstruct(bvec_ids.Get(4), cond1, cond2))};
-    if (config.state.scissor_test_mode == RasterizerRegs::ScissorMode::Include) {
+    if (config.framebuffer.scissor_test_mode == RasterizerRegs::ScissorMode::Include) {
         result = OpLogicalNot(bool_id, result);
     }
 
@@ -167,7 +160,7 @@ void FragmentModule::WriteScissor() {
 void FragmentModule::WriteFog() {
     // Get index into fog LUT
     Id fog_index{};
-    if (config.state.fog_flip) {
+    if (config.texture.fog_flip) {
         fog_index = OpFMul(f32_id, OpFSub(f32_id, ConstF32(1.f), depth), ConstF32(128.f));
     } else {
         fog_index = OpFMul(f32_id, depth, ConstF32(128.f));
@@ -179,11 +172,9 @@ void FragmentModule::WriteFog() {
     const Id fog_lut_offset{GetShaderDataMember(i32_id, ConstS32(10))};
     const Id coord{OpIAdd(i32_id, OpConvertFToS(i32_id, fog_i), fog_lut_offset)};
     if (!Sirit::ValidId(texture_buffer_lut_lf)) {
-        const Id sampled_image{TypeSampledImage(image_buffer_id)};
-        texture_buffer_lut_lf = OpLoad(sampled_image, texture_buffer_lut_lf_id);
+        texture_buffer_lut_lf = OpLoad(image_buffer_id, texture_buffer_lut_lf_id);
     }
-    const Id fog_lut_entry_rgba{
-        OpImageFetch(vec_ids.Get(4), OpImage(image_buffer_id, texture_buffer_lut_lf), coord)};
+    const Id fog_lut_entry_rgba{OpImageFetch(vec_ids.Get(4), texture_buffer_lut_lf, coord)};
     const Id fog_lut_r{OpCompositeExtract(f32_id, fog_lut_entry_rgba, 0)};
     const Id fog_lut_g{OpCompositeExtract(f32_id, fog_lut_entry_rgba, 1)};
     Id fog_factor{OpFma(f32_id, fog_f, fog_lut_g, fog_lut_r)};
@@ -201,14 +192,17 @@ void FragmentModule::WriteFog() {
 
 void FragmentModule::WriteGas() {
     // TODO: Implement me
-    telemetry.AddField(Common::Telemetry::FieldType::Session, "VideoCore_Pica_UseGasMode", true);
     LOG_CRITICAL(Render, "Unimplemented gas mode");
     OpKill();
     OpFunctionEnd();
 }
 
 void FragmentModule::WriteLighting() {
-    const auto& lighting = config.state.lighting;
+    if (!config.lighting.enable) {
+        return;
+    }
+
+    const auto& lighting = config.lighting;
 
     // Define lighting globals
     Id diffuse_sum{ConstF32(0.f, 0.f, 0.f, 1.f)};
@@ -277,9 +271,48 @@ void FragmentModule::WriteLighting() {
         return OpFAdd(vec_ids.Get(3), v, val2);
     };
 
+    // Perform quaternion correction in the fragment shader if fragment_shader_barycentric is
+    // supported.
+    Id normquat{};
+    if (use_fragment_shader_barycentric) {
+        const auto are_quaternions_opposite = [&](Id qa, Id qb) {
+            const Id dot_q{OpDot(f32_id, qa, qb)};
+            const Id dot_le_zero{OpFOrdLessThan(bool_id, dot_q, ConstF32(0.f))};
+            return OpCompositeConstruct(bvec_ids.Get(4), dot_le_zero, dot_le_zero, dot_le_zero,
+                                        dot_le_zero);
+        };
+
+        const Id input_pointer_id{TypePointer(spv::StorageClass::Input, vec_ids.Get(4))};
+        const Id normquat_0{
+            OpLoad(vec_ids.Get(4), OpAccessChain(input_pointer_id, normquat_id, ConstS32(0)))};
+        const Id normquat_1{
+            OpLoad(vec_ids.Get(4), OpAccessChain(input_pointer_id, normquat_id, ConstS32(1)))};
+        const Id normquat_1_correct{OpSelect(vec_ids.Get(4),
+                                             are_quaternions_opposite(normquat_0, normquat_1),
+                                             OpFNegate(vec_ids.Get(4), normquat_1), normquat_1)};
+        const Id normquat_2{
+            OpLoad(vec_ids.Get(4), OpAccessChain(input_pointer_id, normquat_id, ConstS32(2)))};
+        const Id normquat_2_correct{OpSelect(vec_ids.Get(4),
+                                             are_quaternions_opposite(normquat_0, normquat_2),
+                                             OpFNegate(vec_ids.Get(4), normquat_2), normquat_2)};
+        const Id bary_coord{OpLoad(vec_ids.Get(3), gl_bary_coord_id)};
+        const Id bary_coord_x{OpCompositeExtract(f32_id, bary_coord, 0)};
+        const Id bary_coord_y{OpCompositeExtract(f32_id, bary_coord, 1)};
+        const Id bary_coord_z{OpCompositeExtract(f32_id, bary_coord, 2)};
+        const Id normquat_0_final{OpVectorTimesScalar(vec_ids.Get(4), normquat_0, bary_coord_x)};
+        const Id normquat_1_final{
+            OpVectorTimesScalar(vec_ids.Get(4), normquat_1_correct, bary_coord_y)};
+        const Id normquat_2_final{
+            OpVectorTimesScalar(vec_ids.Get(4), normquat_2_correct, bary_coord_z)};
+        normquat = OpFAdd(vec_ids.Get(4), normquat_0_final,
+                          OpFAdd(vec_ids.Get(4), normquat_1_final, normquat_2_final));
+    } else {
+        normquat = OpLoad(vec_ids.Get(4), normquat_id);
+    }
+
     // Rotate the surface-local normal by the interpolated normal quaternion to convert it to
     // eyespace.
-    const Id normalized_normquat{OpNormalize(vec_ids.Get(4), OpLoad(vec_ids.Get(4), normquat_id))};
+    const Id normalized_normquat{OpNormalize(vec_ids.Get(4), normquat)};
     const Id normal{quaternion_rotate(normalized_normquat, surface_normal)};
     const Id tangent{quaternion_rotate(normalized_normquat, surface_tangent)};
 
@@ -363,7 +396,7 @@ void FragmentModule::WriteLighting() {
         const Id sampler_index{ConstU32(static_cast<u32>(sampler))};
         if (abs) {
             // LUT index is in the range of (0.0, 1.0)
-            index = lighting.light[light_num].two_sided_diffuse
+            index = lighting.lights[light_num].two_sided_diffuse
                         ? OpFAbs(f32_id, index)
                         : OpFMax(f32_id, index, ConstF32(0.f));
             return lookup_lighting_lut_unsigned(sampler_index, index);
@@ -375,11 +408,12 @@ void FragmentModule::WriteLighting() {
 
     // Write the code to emulate each enabled light
     for (u32 light_index = 0; light_index < lighting.src_num; ++light_index) {
-        const auto& light_config = lighting.light[light_index];
+        const auto& light_config = lighting.lights[light_index];
 
         const auto GetLightMember = [&](s32 member) -> Id {
             const Id member_type = member < 6 ? vec_ids.Get(3) : f32_id;
-            const Id light_num{ConstS32(static_cast<s32>(lighting.light[light_index].num.Value()))};
+            const Id light_num{
+                ConstS32(static_cast<s32>(lighting.lights[light_index].num.Value()))};
             return GetShaderDataMember(member_type, ConstS32(24), light_num, ConstS32(member));
         };
 
@@ -595,7 +629,7 @@ void FragmentModule::WriteLighting() {
 
 void FragmentModule::WriteTevStage(s32 index) {
     const TexturingRegs::TevStageConfig stage =
-        static_cast<const TexturingRegs::TevStageConfig>(config.state.tev_stages[index]);
+        static_cast<const TexturingRegs::TevStageConfig>(config.texture.tev_stages[index]);
 
     // Detects if a TEV stage is configured to be skipped (to avoid generating unnecessary code)
     const auto is_passthrough_tev_stage = [](const TevStageConfig& stage) {
@@ -860,8 +894,6 @@ Id FragmentModule::AppendProcTexCombineAndMap(ProcTexCombiner combiner, Id u, Id
 }
 
 void FragmentModule::DefineTexSampler(u32 texture_unit) {
-    const PicaFSConfigState& state = config.state;
-
     const Id func_type{TypeFunction(vec_ids.Get(4))};
     sample_tex_unit_func[texture_unit] =
         OpFunction(vec_ids.Get(4), spv::FunctionControlMask::MaskNone, func_type);
@@ -869,14 +901,15 @@ void FragmentModule::DefineTexSampler(u32 texture_unit) {
 
     const Id zero_vec{ConstF32(0.f, 0.f, 0.f, 0.f)};
 
-    if (texture_unit == 0 && state.texture0_type == TexturingRegs::TextureConfig::Disabled) {
+    if (texture_unit == 0 &&
+        config.texture.texture0_type == TexturingRegs::TextureConfig::Disabled) {
         OpReturnValue(zero_vec);
         OpFunctionEnd();
         return;
     }
 
     if (texture_unit == 3) {
-        if (state.proctex.enable) {
+        if (config.proctex.enable) {
             OpReturnValue(ProcTexSampler());
         } else {
             OpReturnValue(zero_vec);
@@ -888,10 +921,10 @@ void FragmentModule::DefineTexSampler(u32 texture_unit) {
     const Id border_label{OpLabel()};
     const Id not_border_label{OpLabel()};
 
-    u32 texcoord_num = texture_unit == 2 && state.texture2_use_coord1 ? 1 : texture_unit;
+    u32 texcoord_num = texture_unit == 2 && config.texture.texture2_use_coord1 ? 1 : texture_unit;
     const Id texcoord{OpLoad(vec_ids.Get(2), texcoord_id[texcoord_num])};
 
-    auto& texture_border_color = state.texture_border_color[texture_unit];
+    const auto& texture_border_color = config.texture.texture_border_color[texture_unit];
     if (texture_border_color.enable_s || texture_border_color.enable_t) {
         const Id texcoord_s{OpCompositeExtract(f32_id, texcoord, 0)};
         const Id texcoord_t{OpCompositeExtract(f32_id, texcoord, 1)};
@@ -960,7 +993,7 @@ void FragmentModule::DefineTexSampler(u32 texture_unit) {
     switch (texture_unit) {
     case 0:
         // Only unit 0 respects the texturing type
-        switch (state.texture0_type) {
+        switch (config.texture.texture0_type) {
         case Pica::TexturingRegs::TextureConfig::Texture2D:
             ret_val = sample_lod(tex0_id);
             break;
@@ -976,7 +1009,8 @@ void FragmentModule::DefineTexSampler(u32 texture_unit) {
             // return "shadowTextureCube(texcoord0, texcoord0_w)";
             break;
         default:
-            LOG_CRITICAL(Render, "Unhandled texture type {:x}", state.texture0_type.Value());
+            LOG_CRITICAL(Render, "Unhandled texture type {:x}",
+                         config.texture.texture0_type.Value());
             UNIMPLEMENTED();
             ret_val = zero_vec;
             break;
@@ -999,7 +1033,7 @@ void FragmentModule::DefineTexSampler(u32 texture_unit) {
 
 Id FragmentModule::ProcTexSampler() {
     // Define noise tables at the beginning of the function
-    if (config.state.proctex.noise_enable) {
+    if (config.proctex.noise_enable) {
         noise1d_table =
             DefineVar<false>(TypeArray(i32_id, ConstU32(16u)), spv::StorageClass::Function);
         noise2d_table =
@@ -1008,8 +1042,8 @@ Id FragmentModule::ProcTexSampler() {
     lut_offsets = DefineVar<false>(TypeArray(i32_id, ConstU32(8u)), spv::StorageClass::Function);
 
     Id uv{};
-    if (config.state.proctex.coord < 3) {
-        const Id texcoord{OpLoad(vec_ids.Get(2), texcoord_id[config.state.proctex.coord.Value()])};
+    if (config.proctex.coord < 3) {
+        const Id texcoord{OpLoad(vec_ids.Get(2), texcoord_id[config.proctex.coord.Value()])};
         uv = OpFAbs(vec_ids.Get(2), texcoord);
     } else {
         LOG_CRITICAL(Render, "Unexpected proctex.coord >= 3");
@@ -1027,26 +1061,24 @@ Id FragmentModule::ProcTexSampler() {
     // unlike normal texture, the bias is inside the log2
     const Id proctex_bias{GetShaderDataMember(f32_id, ConstS32(16))};
     const Id bias{
-        OpFMul(f32_id, ConstF32(static_cast<f32>(config.state.proctex.lut_width)), proctex_bias)};
+        OpFMul(f32_id, ConstF32(static_cast<f32>(config.proctex.lut_width)), proctex_bias)};
     const Id duv_xy{
         OpFAdd(f32_id, OpCompositeExtract(f32_id, duv, 0), OpCompositeExtract(f32_id, duv, 1))};
 
     Id lod{OpLog2(f32_id, OpFMul(f32_id, OpFAbs(f32_id, bias), duv_xy))};
     lod = OpSelect(f32_id, OpFOrdEqual(bool_id, proctex_bias, ConstF32(0.f)), ConstF32(0.f), lod);
-    lod = OpFClamp(f32_id, lod,
-                   ConstF32(std::max(0.0f, static_cast<float>(config.state.proctex.lod_min))),
-                   ConstF32(std::min(7.0f, static_cast<float>(config.state.proctex.lod_max))));
+    lod =
+        OpFClamp(f32_id, lod, ConstF32(std::max(0.0f, static_cast<float>(config.proctex.lod_min))),
+                 ConstF32(std::min(7.0f, static_cast<float>(config.proctex.lod_max))));
 
     // Get shift offset before noise generation
     const Id u_shift{AppendProcTexShiftOffset(OpCompositeExtract(f32_id, uv, 1),
-                                              config.state.proctex.u_shift,
-                                              config.state.proctex.u_clamp)};
+                                              config.proctex.u_shift, config.proctex.u_clamp)};
     const Id v_shift{AppendProcTexShiftOffset(OpCompositeExtract(f32_id, uv, 0),
-                                              config.state.proctex.v_shift,
-                                              config.state.proctex.v_clamp)};
+                                              config.proctex.v_shift, config.proctex.v_clamp)};
 
     // Generate noise
-    if (config.state.proctex.noise_enable) {
+    if (config.proctex.noise_enable) {
         const Id proctex_noise_a{GetShaderDataMember(vec_ids.Get(2), ConstS32(21))};
         const Id noise_coef{ProcTexNoiseCoef(uv)};
         uv = OpFAdd(vec_ids.Get(2), uv,
@@ -1059,16 +1091,16 @@ Id FragmentModule::ProcTexSampler() {
     Id v{OpFAdd(f32_id, OpCompositeExtract(f32_id, uv, 1), v_shift)};
 
     // Clamp
-    u = AppendProcTexClamp(u, config.state.proctex.u_clamp);
-    v = AppendProcTexClamp(v, config.state.proctex.v_clamp);
+    u = AppendProcTexClamp(u, config.proctex.u_clamp);
+    v = AppendProcTexClamp(v, config.proctex.v_clamp);
 
     // Combine and map
     const Id proctex_color_map_offset{GetShaderDataMember(i32_id, ConstS32(12))};
-    const Id lut_coord{AppendProcTexCombineAndMap(config.state.proctex.color_combiner, u, v,
-                                                  proctex_color_map_offset)};
+    const Id lut_coord{
+        AppendProcTexCombineAndMap(config.proctex.color_combiner, u, v, proctex_color_map_offset)};
 
     Id final_color{};
-    switch (config.state.proctex.lut_filter) {
+    switch (config.proctex.lut_filter) {
     case ProcTexFilter::Linear:
     case ProcTexFilter::Nearest: {
         final_color = SampleProcTexColor(lut_coord, ConstS32(0));
@@ -1090,9 +1122,9 @@ Id FragmentModule::ProcTexSampler() {
     }
     }
 
-    if (config.state.proctex.separate_alpha) {
+    if (config.proctex.separate_alpha) {
         const Id proctex_alpha_map_offset{GetShaderDataMember(i32_id, ConstS32(13))};
-        const Id final_alpha{AppendProcTexCombineAndMap(config.state.proctex.alpha_combiner, u, v,
+        const Id final_alpha{AppendProcTexCombineAndMap(config.proctex.alpha_combiner, u, v,
                                                         proctex_alpha_map_offset)};
         final_color = OpCompositeInsert(vec_ids.Get(4), final_alpha, final_color, 3);
     }
@@ -1118,11 +1150,9 @@ Id FragmentModule::ProcTexLookupLUT(Id offset, Id coord) {
     const Id index_f{OpFSub(f32_id, coord, index_i)};
     const Id p{OpIAdd(i32_id, OpConvertFToS(i32_id, index_i), offset)};
     if (!Sirit::ValidId(texture_buffer_lut_rg)) {
-        const Id sampled_image{TypeSampledImage(image_buffer_id)};
-        texture_buffer_lut_rg = OpLoad(sampled_image, texture_buffer_lut_rg_id);
+        texture_buffer_lut_rg = OpLoad(image_buffer_id, texture_buffer_lut_rg_id);
     }
-    const Id entry{
-        OpImageFetch(vec_ids.Get(4), OpImage(image_buffer_id, texture_buffer_lut_rg), p)};
+    const Id entry{OpImageFetch(vec_ids.Get(4), texture_buffer_lut_rg, p)};
     const Id entry_r{OpCompositeExtract(f32_id, entry, 0)};
     const Id entry_g{OpCompositeExtract(f32_id, entry, 1)};
     return OpFClamp(f32_id, OpFma(f32_id, entry_g, index_f, entry_r), ConstF32(0.f), ConstF32(1.f));
@@ -1189,27 +1219,23 @@ Id FragmentModule::ProcTexNoiseCoef(Id x) {
 }
 
 Id FragmentModule::SampleProcTexColor(Id lut_coord, Id level) {
-    const Id lut_width{
-        OpShiftRightArithmetic(i32_id, ConstS32(config.state.proctex.lut_width), level)};
+    const Id lut_width{OpShiftRightArithmetic(i32_id, ConstS32(config.proctex.lut_width), level)};
     const Id lut_ptr{TypePointer(spv::StorageClass::Function, i32_id)};
     // Offsets for level 4-7 seem to be hardcoded
-    InitTableS32(lut_offsets, config.state.proctex.lut_offset0, config.state.proctex.lut_offset1,
-                 config.state.proctex.lut_offset2, config.state.proctex.lut_offset3, 0xF0, 0xF8,
-                 0xFC, 0xFE);
+    InitTableS32(lut_offsets, config.proctex.lut_offset0, config.proctex.lut_offset1,
+                 config.proctex.lut_offset2, config.proctex.lut_offset3, 0xF0, 0xF8, 0xFC, 0xFE);
     const Id lut_offset{OpLoad(i32_id, OpAccessChain(lut_ptr, lut_offsets, level))};
     // For the color lut, coord=0.0 is lut[offset] and coord=1.0 is lut[offset+width-1]
     lut_coord =
         OpFMul(f32_id, lut_coord, OpConvertSToF(f32_id, OpISub(i32_id, lut_width, ConstS32(1))));
 
     if (!Sirit::ValidId(texture_buffer_lut_rgba)) {
-        const Id sampled_image{TypeSampledImage(image_buffer_id)};
-        texture_buffer_lut_rgba = OpLoad(sampled_image, texture_buffer_lut_rgba_id);
+        texture_buffer_lut_rgba = OpLoad(image_buffer_id, texture_buffer_lut_rgba_id);
     }
 
     const Id proctex_lut_offset{GetShaderDataMember(i32_id, ConstS32(14))};
-    const Id lut_rgba{OpImage(image_buffer_id, texture_buffer_lut_rgba)};
 
-    switch (config.state.proctex.lut_filter) {
+    switch (config.proctex.lut_filter) {
     case ProcTexFilter::Linear:
     case ProcTexFilter::LinearMipmapLinear:
     case ProcTexFilter::LinearMipmapNearest: {
@@ -1218,8 +1244,8 @@ Id FragmentModule::SampleProcTexColor(Id lut_coord, Id level) {
         const Id proctex_diff_lut_offset{GetShaderDataMember(i32_id, ConstS32(15))};
         const Id p1{OpIAdd(i32_id, lut_index_i, proctex_lut_offset)};
         const Id p2{OpIAdd(i32_id, lut_index_i, proctex_diff_lut_offset)};
-        const Id texel1{OpImageFetch(vec_ids.Get(4), lut_rgba, p1)};
-        const Id texel2{OpImageFetch(vec_ids.Get(4), lut_rgba, p2)};
+        const Id texel1{OpImageFetch(vec_ids.Get(4), texture_buffer_lut_rgba, p1)};
+        const Id texel2{OpImageFetch(vec_ids.Get(4), texture_buffer_lut_rgba, p2)};
         return OpFAdd(vec_ids.Get(4), texel1,
                       OpVectorTimesScalar(vec_ids.Get(4), texel2, lut_index_f));
     }
@@ -1229,7 +1255,7 @@ Id FragmentModule::SampleProcTexColor(Id lut_coord, Id level) {
         lut_coord = OpFAdd(f32_id, lut_coord, OpConvertSToF(f32_id, lut_offset));
         const Id lut_coord_rounded{OpConvertFToS(i32_id, OpRound(f32_id, lut_coord))};
         const Id p{OpIAdd(i32_id, lut_coord_rounded, proctex_lut_offset)};
-        return OpImageFetch(vec_ids.Get(4), lut_rgba, p);
+        return OpImageFetch(vec_ids.Get(4), texture_buffer_lut_rgba, p);
     }
     }
 
@@ -1239,16 +1265,14 @@ Id FragmentModule::SampleProcTexColor(Id lut_coord, Id level) {
 Id FragmentModule::LookupLightingLUT(Id lut_index, Id index, Id delta) {
     // Only load the texture buffer lut once
     if (!Sirit::ValidId(texture_buffer_lut_lf)) {
-        const Id sampled_image{TypeSampledImage(image_buffer_id)};
-        texture_buffer_lut_lf = OpLoad(sampled_image, texture_buffer_lut_lf_id);
+        texture_buffer_lut_lf = OpLoad(image_buffer_id, texture_buffer_lut_lf_id);
     }
 
     const Id lut_index_x{OpShiftRightArithmetic(i32_id, lut_index, ConstS32(2))};
     const Id lut_index_y{OpBitwiseAnd(i32_id, lut_index, ConstS32(3))};
     const Id lut_offset{GetShaderDataMember(i32_id, ConstS32(18), lut_index_x, lut_index_y)};
     const Id coord{OpIAdd(i32_id, lut_offset, index)};
-    const Id entry{
-        OpImageFetch(vec_ids.Get(4), OpImage(image_buffer_id, texture_buffer_lut_lf), coord)};
+    const Id entry{OpImageFetch(vec_ids.Get(4), texture_buffer_lut_lf, coord)};
     const Id entry_r{OpCompositeExtract(f32_id, entry, 0)};
     const Id entry_g{OpCompositeExtract(f32_id, entry, 1)};
     return OpFma(f32_id, entry_g, delta, entry_r);
@@ -1462,13 +1486,24 @@ void FragmentModule::DefineEntryPoint() {
     AddCapability(spv::Capability::Shader);
     AddCapability(spv::Capability::SampledBuffer);
     AddCapability(spv::Capability::ImageQuery);
+    if (use_fragment_shader_barycentric) {
+        AddCapability(spv::Capability::FragmentBarycentricKHR);
+        AddExtension("SPV_KHR_fragment_shader_barycentric");
+    }
     SetMemoryModel(spv::AddressingModel::Logical, spv::MemoryModel::GLSL450);
 
     const Id main_type{TypeFunction(TypeVoid())};
     const Id main_func{OpFunction(TypeVoid(), spv::FunctionControlMask::MaskNone, main_type)};
-    AddEntryPoint(spv::ExecutionModel::Fragment, main_func, "main", primary_color_id,
-                  texcoord_id[0], texcoord_id[1], texcoord_id[2], texcoord0_w_id, normquat_id,
-                  view_id, color_id, gl_frag_coord_id, gl_frag_depth_id);
+
+    boost::container::small_vector<Id, 11> interface_ids{
+        primary_color_id, texcoord_id[0], texcoord_id[1], texcoord_id[2],   texcoord0_w_id,
+        normquat_id,      view_id,        color_id,       gl_frag_coord_id, gl_frag_depth_id,
+    };
+    if (use_fragment_shader_barycentric) {
+        interface_ids.push_back(gl_bary_coord_id);
+    }
+
+    AddEntryPoint(spv::ExecutionModel::Fragment, main_func, "main", interface_ids);
     AddExecutionMode(main_func, spv::ExecutionMode::OriginUpperLeft);
     AddExecutionMode(main_func, spv::ExecutionMode::DepthReplacing);
 }
@@ -1520,7 +1555,12 @@ void FragmentModule::DefineInterface() {
     texcoord_id[1] = DefineInput(vec_ids.Get(2), 3);
     texcoord_id[2] = DefineInput(vec_ids.Get(2), 4);
     texcoord0_w_id = DefineInput(f32_id, 5);
-    normquat_id = DefineInput(vec_ids.Get(4), 6);
+    if (use_fragment_shader_barycentric) {
+        normquat_id = DefineInput(TypeArray(vec_ids.Get(4), ConstU32(3U)), 6);
+        Decorate(normquat_id, spv::Decoration::PerVertexKHR);
+    } else {
+        normquat_id = DefineInput(vec_ids.Get(4), 6);
+    }
     view_id = DefineInput(vec_ids.Get(3), 7);
     color_id = DefineOutput(vec_ids.Get(4), 0);
 
@@ -1531,9 +1571,9 @@ void FragmentModule::DefineInterface() {
     image_r32_id = TypeImage(u32_id, spv::Dim::Dim2D, 0, 0, 0, 2, spv::ImageFormat::R32ui);
     sampler_id = TypeSampler();
 
-    texture_buffer_lut_lf_id = DefineUniformConst(TypeSampledImage(image_buffer_id), 0, 3);
-    texture_buffer_lut_rg_id = DefineUniformConst(TypeSampledImage(image_buffer_id), 0, 4);
-    texture_buffer_lut_rgba_id = DefineUniformConst(TypeSampledImage(image_buffer_id), 0, 5);
+    texture_buffer_lut_lf_id = DefineUniformConst(image_buffer_id, 0, 3);
+    texture_buffer_lut_rg_id = DefineUniformConst(image_buffer_id, 0, 4);
+    texture_buffer_lut_rgba_id = DefineUniformConst(image_buffer_id, 0, 5);
     tex0_id = DefineUniformConst(TypeSampledImage(image2d_id), 1, 0);
     tex1_id = DefineUniformConst(TypeSampledImage(image2d_id), 1, 1);
     tex2_id = DefineUniformConst(TypeSampledImage(image2d_id), 1, 2);
@@ -1547,11 +1587,14 @@ void FragmentModule::DefineInterface() {
     gl_frag_depth_id = DefineVar(f32_id, spv::StorageClass::Output);
     Decorate(gl_frag_coord_id, spv::Decoration::BuiltIn, spv::BuiltIn::FragCoord);
     Decorate(gl_frag_depth_id, spv::Decoration::BuiltIn, spv::BuiltIn::FragDepth);
+    if (use_fragment_shader_barycentric) {
+        gl_bary_coord_id = DefineVar(vec_ids.Get(3), spv::StorageClass::Input);
+        Decorate(gl_bary_coord_id, spv::Decoration::BuiltIn, spv::BuiltIn::BaryCoordKHR);
+    }
 }
 
-std::vector<u32> GenerateFragmentShader(const PicaFSConfig& config) {
-    auto& telemetry = Core::System::GetInstance().TelemetrySession();
-    FragmentModule module{telemetry, config};
+std::vector<u32> GenerateFragmentShader(const FSConfig& config, const Profile& profile) {
+    FragmentModule module{config, profile};
     module.Generate();
     return module.Assemble();
 }

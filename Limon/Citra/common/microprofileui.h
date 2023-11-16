@@ -16,4 +16,4 @@
 // This isn't included by microprofileui.h :(
 #include <cstdlib> // For std::abs
 
-#include <microprofile/microprofileui.h>
+#include <microprofileui.h>

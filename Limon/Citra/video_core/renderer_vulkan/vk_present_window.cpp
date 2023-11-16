@@ -12,7 +12,7 @@
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_swapchain.h"
 
-#include <vk_mem_alloc/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 MICROPROFILE_DEFINE(Vulkan_WaitPresent, "Vulkan", "Wait For Present", MP_RGB(128, 128, 128));
 

@@ -100,7 +100,7 @@ enum Resolution : Int, CustomStringConvertible {
 
     @objc static var spirvShaderGen: Bool = UserDefaults.standard.bool(forKey: "spirvShaderGen")
     @objc static var asyncShaderCompilation: Bool = UserDefaults.standard.bool(forKey: "asyncShaderCompilation")
-    @objc static var asyncPresentation: Bool = UserDefaults.standard.bool(forKey: "asyncPresentation")
+    @objc static var asyncShaderPresentation: Bool = UserDefaults.standard.bool(forKey: "asyncPresentation")
     @objc static var useHWShader: Bool = UserDefaults.standard.bool(forKey: "useHWShader")
     @objc static var useDiskShaderCache: Bool = UserDefaults.standard.bool(forKey: "useDiskShaderCache")
     @objc static var shadersAccurateMul: Bool = UserDefaults.standard.bool(forKey: "shadersAccurateMul")
@@ -124,7 +124,7 @@ enum Resolution : Int, CustomStringConvertible {
 
         EmulationSettings.spirvShaderGen = UserDefaults.standard.bool(forKey: "spirvShaderGen")
         EmulationSettings.asyncShaderCompilation = UserDefaults.standard.bool(forKey: "asyncShaderCompilation")
-        EmulationSettings.asyncPresentation = UserDefaults.standard.bool(forKey: "asyncPresentation")
+        EmulationSettings.asyncShaderPresentation = UserDefaults.standard.bool(forKey: "asyncShaderPresentation")
         EmulationSettings.useHWShader = UserDefaults.standard.bool(forKey: "useHWShader")
         EmulationSettings.useDiskShaderCache = UserDefaults.standard.bool(forKey: "useDiskShaderCache")
         EmulationSettings.shadersAccurateMul = UserDefaults.standard.bool(forKey: "shadersAccurateMul")
@@ -146,7 +146,12 @@ enum Resolution : Int, CustomStringConvertible {
         
         if let gamesController = controller as? LMGamesController {
             gamesController.settings = .init()
-            gamesController.navigationItem.setLeftBarButton(.init(image: .init(systemName: "gearshape.fill"), menu: gamesController.settingsMenu()), animated: true)
+            gamesController.navigationItem.setLeftBarButtonItems([
+                .init(image: .init(systemName: "arrow.down.doc.fill"), primaryAction: .init(handler: { _ in
+                    gamesController.openCIADocumentPicker()
+                })),
+                .init(image: .init(systemName: "gearshape.fill"), menu: gamesController.outOfGameSettingsMenu())
+            ], animated: true)
         }
     }
     
@@ -155,7 +160,12 @@ enum Resolution : Int, CustomStringConvertible {
         
         if let gamesController = controller as? LMGamesController {
             gamesController.settings = .init()
-            gamesController.navigationItem.setLeftBarButton(.init(image: .init(systemName: "gearshape.fill"), menu: gamesController.settingsMenu()), animated: true)
+            gamesController.navigationItem.setLeftBarButtonItems([
+                .init(image: .init(systemName: "arrow.down.doc.fill"), primaryAction: .init(handler: { _ in
+                    gamesController.openCIADocumentPicker()
+                })),
+                .init(image: .init(systemName: "gearshape.fill"), menu: gamesController.outOfGameSettingsMenu())
+            ], animated: true)
         }
     }
 }
@@ -169,7 +179,7 @@ class LMGamesController : UICollectionViewController {
     
     var settings = EmulationSettings()
     
-    var player: AVAudioPlayer!
+    var player: AVAudioPlayer? = nil
     
     init(_ collectionViewLayout: UICollectionViewLayout, _ items: (imported: [LMInstalledGame], installed: [LMInstalledGame], system: [LMImportedGame])) {
         self.items = items
@@ -182,7 +192,12 @@ class LMGamesController : UICollectionViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.setLeftBarButton(.init(image: .init(systemName: "gearshape.fill"), menu: settingsMenu()), animated: true)
+        navigationItem.setLeftBarButtonItems([
+            .init(image: .init(systemName: "arrow.down.doc.fill"), primaryAction: .init(handler: { _ in
+                self.openCIADocumentPicker()
+            })),
+            .init(image: .init(systemName: "gearshape.fill"), menu: outOfGameSettingsMenu())
+        ], animated: true)
         title = "Games"
         useSystemBackgroundColor()
         wantsLargeNavigationTitle(true)
@@ -297,13 +312,18 @@ class LMGamesController : UICollectionViewController {
         let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("sounds", conformingTo: .folder)
             .appendingPathComponent("menu.mp3", conformingTo: .fileURL)
-            
-        do {
-            self.player = try AVAudioPlayer(contentsOf: url)
-            self.player.numberOfLoops = -1
-            self.player.play()
-        } catch {
-            print(error.localizedDescription)
+        if FileManager.default.fileExists(atPath: url.path) {
+            do {
+                self.player = try AVAudioPlayer(contentsOf: url)
+                guard let player = self.player else {
+                    return
+                }
+                
+                player.numberOfLoops = -1
+                player.play()
+            } catch {
+                print(error.localizedDescription)
+            }
         }
     }
     
@@ -323,7 +343,12 @@ class LMGamesController : UICollectionViewController {
             
             let emulationViewController = LMEmulationController(game: game)
             emulationViewController.modalPresentationStyle = .fullScreen
-            present(emulationViewController, animated: true)
+            let vc = self
+            present(emulationViewController, animated: true) {
+                if let player = vc.player, player.isPlaying {
+                    player.stop()
+                }
+            }
         case .system:
             guard let game = dataSource.snapshot().itemIdentifiers(inSection: section)[indexPath.row] as? LMImportedGame else {
                 return
@@ -331,7 +356,12 @@ class LMGamesController : UICollectionViewController {
             
             let emulationViewController = LMEmulationController(game: game)
             emulationViewController.modalPresentationStyle = .fullScreen
-            present(emulationViewController, animated: true)
+            let vc = self
+            present(emulationViewController, animated: true) {
+                if let player = vc.player, player.isPlaying {
+                    player.stop()
+                }
+            }
         }
     }
     
@@ -346,149 +376,5 @@ class LMGamesController : UICollectionViewController {
         
         documentPickerViewController.delegate = self
         present(documentPickerViewController, animated: true)
-    }
-    
-    
-    fileprivate func settingsMenu() -> UIMenu {
-        let cpuClockMenuChildren = [
-            (value: 100, systemName: "dial.high.fill"), (value: 75, systemName: "dial.medium.fill"), (value: 50, systemName: "dial.low.fill")
-        ]
-        
-        
-        let coreSettingsMenu: UIMenu = if #available(iOS 16, *) {
-            .init(options: .displayInline, preferredElementSize: .small, children: [
-                UIAction(image: .init(systemName: EmulationSettings.useCPUJIT ? "tortoise.fill" : "hare.fill"), handler: { _ in
-                    self.settings.set(bool: !EmulationSettings.useCPUJIT, for: "useCPUJIT", self)
-                }),
-                UIMenu(title: "CPU Clock", image: .init(systemName: EmulationSettings.cpuClockPercentage == 100 ? "dial.high.fill" : EmulationSettings.cpuClockPercentage == 75 ? "dial.medium.fill" : "dial.low.fill"), children: cpuClockMenuChildren.reduce(into: [UIAction](), { partialResult, option in
-                    partialResult.append(.init(title: "\(option.value)%", image: .init(systemName: option.systemName), state: EmulationSettings.cpuClockPercentage == option.value ? .on : .off, handler: { _ in
-                        self.settings.set(int: option.value, for: "cpuClockPercentage", self)
-                    }))
-                })),
-                UIAction(image: .init(systemName: EmulationSettings.isNew3DS ? "star.slash.fill" : "star.fill"), handler: { _ in
-                    self.settings.set(bool: !EmulationSettings.isNew3DS, for: "isNew3DS", self)
-                })
-            ])
-        } else {
-            .init(options: .displayInline, children: [
-                UIAction(image: .init(systemName: EmulationSettings.useCPUJIT ? "tortoise.fill" : "hare.fill"), handler: { _ in
-                    self.settings.set(bool: !EmulationSettings.useCPUJIT, for: "useCPUJIT", self)
-                }),
-                UIMenu(title: "CPU Clock", image: .init(systemName: EmulationSettings.cpuClockPercentage == 100 ? "dial.high.fill" : EmulationSettings.cpuClockPercentage == 75 ? "dial.medium.fill" : "dial.low.fill"), children: cpuClockMenuChildren.reduce(into: [UIAction](), { partialResult, option in
-                    partialResult.append(.init(title: "\(option.value)%", image: .init(systemName: option.systemName), state: EmulationSettings.cpuClockPercentage == option.value ? .on : .off, handler: { _ in
-                        self.settings.set(int: option.value, for: "cpuClockPercentage", self)
-                    }))
-                })),
-                UIAction(image: .init(systemName: EmulationSettings.isNew3DS ? "star.slash.fill" : "star.fill"), handler: { _ in
-                    self.settings.set(bool: !EmulationSettings.isNew3DS, for: "isNew3DS", self)
-                })
-            ])
-        }
-        
-        
-        let audioInputMenuChildren = [
-            (title: "Auto", value: 0), (title: "Disabled", value: 1), (title: "Static Noise", value: 2), (title: "OpenAL", value: 3)
-        ]
-        
-        let audioOutputMenuChildren = [
-            (title: "Auto", value: 0), (title: "Disabled", value: 1), (title: "OpenAL", value: 2), (title: "SDL2", value: 3), (title: "CoreAudio", value: 4)
-        ]
-        
-        let audioSettingsMenu: UIMenu = if #available(iOS 16, *) {
-            .init(options: .displayInline, preferredElementSize: .small, children: [
-                UIMenu(title: "Audio Input", image: .init(systemName: "mic.fill"), children: audioInputMenuChildren.reduce(into: [UIAction](), { partialResult, input in
-                    partialResult.append(.init(title: input.title, state: EmulationSettings.audioInputType == input.value ? .on : .off, handler: { _ in
-                        self.settings.set(int: input.value, for: "audioInputType", self)
-                    }))
-                })),
-                UIMenu(title: "Audio Output", image: .init(systemName: "speaker.wave.3.fill"), children: audioOutputMenuChildren.reduce(into: [UIAction](), { partialResult, output in
-                    partialResult.append(.init(title: output.title, attributes: output.value == 4 ? [.disabled] : [], state: EmulationSettings.audioOutputType == output.value ? .on : .off, handler: { _ in
-                        self.settings.set(int: output.value, for: "audioOutputType", self)
-                    }))
-                }))
-            ])
-        } else {
-            .init(options: .displayInline, children: [
-                UIMenu(title: "Audio Input", image: .init(systemName: "mic.fill"), children: audioInputMenuChildren.reduce(into: [UIAction](), { partialResult, input in
-                    partialResult.append(.init(title: input.title, state: EmulationSettings.audioInputType == input.value ? .on : .off, handler: { _ in
-                        self.settings.set(int: input.value, for: "audioInputType", self)
-                    }))
-                })),
-                UIMenu(title: "Audio Output", image: .init(systemName: "speaker.wave.3.fill"), children: audioOutputMenuChildren.reduce(into: [UIAction](), { partialResult, output in
-                    partialResult.append(.init(title: output.title, attributes: output.value == 4 ? [.disabled] : [], state: EmulationSettings.audioOutputType == output.value ? .on : .off, handler: { _ in
-                        self.settings.set(int: output.value, for: "audioOutputType", self)
-                    }))
-                }))
-            ])
-        }
-        
-        let rendererSettings: [UIMenuElement] = [
-            UIMenu(title: "Shader", image: .init(systemName: ""), children: [
-                UIMenu(title: "Async", image: .init(systemName: ""), children: [
-                    UIAction(title: "Shader Compilation", image: .init(systemName: ""), state: EmulationSettings.asyncShaderCompilation ? .on : .off, handler: { _ in
-                        self.settings.set(bool: !EmulationSettings.asyncShaderCompilation, for: "asyncShaderCompilation", self)
-                    }),
-                    UIAction(title: "Shader Presentation", image: .init(systemName: ""), state: EmulationSettings.asyncPresentation ? .on : .off, handler: { _ in
-                        self.settings.set(bool: !EmulationSettings.asyncPresentation, for: "asyncShaderPresentation", self)
-                    })
-                ]),
-                UIAction(title: "SPIRV Shader Generation", image: .init(systemName: ""), state: EmulationSettings.spirvShaderGen ? .on : .off, handler: { _ in
-                    self.settings.set(bool: !EmulationSettings.spirvShaderGen, for: "spirvShaderGen", self)
-                }),
-                UIAction(title: "Hardware Shader", image: .init(systemName: ""), state: EmulationSettings.useHWShader ? .on : .off, handler: { _ in
-                    self.settings.set(bool: !EmulationSettings.useHWShader, for: "useHWShader", self)
-                }),
-                UIAction(title: "Disk Shader Cache", image: .init(systemName: ""), state: EmulationSettings.useDiskShaderCache ? .on : .off, handler: { _ in
-                    self.settings.set(bool: !EmulationSettings.useDiskShaderCache, for: "useDiskShaderCache", self)
-                }),
-                UIAction(title: "Shaders Accurate Mul", image: .init(systemName: ""), state: EmulationSettings.shadersAccurateMul ? .on : .off, handler: { _ in
-                    self.settings.set(bool: !EmulationSettings.shadersAccurateMul, for: "shadersAccurateMul", self)
-                }),
-                UIAction(title: "Shader JIT", image: .init(systemName: ""), state: EmulationSettings.useShaderJIT ? .on : .off, handler: { _ in
-                    self.settings.set(bool: !EmulationSettings.useShaderJIT, for: "useShaderJIT", self)
-                })
-            ]),
-            UIAction(title: "New VSync", image: .init(systemName: ""), state: EmulationSettings.useNewVSync ? .on : .off, handler: { _ in
-                self.settings.set(bool: !EmulationSettings.useNewVSync, for: "useNewVSync", self)
-            })
-        ]
-        
-        let divider2 = UIMenu(title: "Renderer", options: .displayInline, children: rendererSettings)
-        
-        let rendererSettings2: [UIMenuElement] = [
-            UIMenu(title: "Texture Filter", image: .init(systemName: "camera.filters"), children: TextureFilter.filters.reduce(into: [UIAction](), { partialResult, filter in
-                partialResult.append(.init(title: filter.description, image: .init(systemName: ""), state: EmulationSettings.textureFilter == filter.rawValue ? .on : .off, handler: { _ in
-                    self.settings.set(int: filter.rawValue, for: "textureFilter", self)
-                }))
-            })),
-            UIMenu(title: "Mono Render", image: .init(systemName: "circle.grid.2x1.left.filled"), children: MonoRender.options.reduce(into: [UIAction](), { partialResult, option in
-                partialResult.append(.init(title: option.description, image: .init(systemName: ""), state: EmulationSettings.monoRender == option.rawValue ? .on : .off, handler: { _ in
-                    self.settings.set(int: option.rawValue, for: "monoRender", self)
-                }))
-            })),
-            UIMenu(title: "Stereo Render", image: .init(systemName: "circle.grid.2x1.fill"), children: StereoRender.options.reduce(into: [UIAction](), { partialResult, option in
-                partialResult.append(.init(title: option.description, image: .init(systemName: ""), state: EmulationSettings.stereoRender == option.rawValue ? .on : .off, handler: { _ in
-                    self.settings.set(int: option.rawValue, for: "stereoRender", self)
-                }))
-            })),
-            UIMenu(title: "Resolution Factor", image: .init(systemName: "square.resize.up"), children: Resolution.resolutions.reduce(into: [UIAction](), { partialResult, option in
-                partialResult.append(.init(title: option.description, image: .init(systemName: ""), state: EmulationSettings.resolutionFactor == option.rawValue ? .on : .off, handler: { _ in
-                    self.settings.set(int: option.rawValue, for: "resolutionFactor", self)
-                }))
-            }))
-        ]
-        
-        let rendererSettings2Menu: UIMenu = if #available(iOS 16, *) {
-            .init(options: .displayInline, preferredElementSize: .small, children: rendererSettings2)
-        } else {
-            .init(options: .displayInline, children: rendererSettings2)
-        }
-        
-        return .init(children: [
-            UIAction(title: "Import CIA", image: .init(systemName: "arrow.down.doc.fill"), handler: { _ in
-                self.openCIADocumentPicker()
-            }),
-            UIMenu(title: "Settings", image: .init(systemName: "gearshape.fill"), children: [coreSettingsMenu, audioSettingsMenu, divider2, rendererSettings2Menu])
-        ])
     }
 }
