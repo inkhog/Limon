@@ -140,6 +140,9 @@ extension LMGamesController {
                     }),
                     UIAction(title: "Shader JIT", image: .init(systemName: ""), state: EmulationSettings.useShaderJIT ? .on : .off, handler: { _ in
                         self.settings.set(bool: !EmulationSettings.useShaderJIT, for: "useShaderJIT", self)
+                    }),
+                    UIAction(title: "New VSync", image: .init(systemName: ""), state: EmulationSettings.useNewVSync ? .on : .off, handler: { _ in
+                        self.settings.set(bool: !EmulationSettings.useNewVSync, for: "useNewVSync", self)
                     })
                 ]
             }

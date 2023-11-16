@@ -285,9 +285,9 @@ System::ResultStatus System::Load(Frontend::EmuWindow& emu_window, const std::st
     ASSERT(memory_mode.first);
     auto n3ds_hw_caps = app_loader->LoadNew3dsHwCapabilities();
     ASSERT(n3ds_hw_caps.first);
-    u32 num_cores = 4;
+    u32 num_cores = 2;
     if (Settings::values.is_new_3ds) {
-        num_cores = 6;
+        num_cores = 4;
     }
     ResultStatus init_result{
         Init(emu_window, secondary_window, *memory_mode.first, *n3ds_hw_caps.first, num_cores)};
