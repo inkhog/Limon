@@ -4,6 +4,7 @@
 
 #include <boost/container/small_vector.hpp>
 
+#include "common/literals.h"
 #include "common/microprofile.h"
 #include "common/scope_exit.h"
 #include "video_core/custom_textures/material.h"
@@ -16,7 +17,7 @@
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_texture_runtime.h"
 
-#include <vk_mem_alloc/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 #include <vulkan/vulkan_format_traits.hpp>
 
 // Ignore the -Wclass-memaccess warning on memcpy for non-trivially default constructible objects.
@@ -35,6 +36,7 @@ using VideoCore::MapType;
 using VideoCore::PixelFormat;
 using VideoCore::SurfaceType;
 using VideoCore::TextureType;
+using namespace Common::Literals;
 
 struct RecordParams {
     vk::ImageAspectFlags aspect;
@@ -244,8 +246,8 @@ vk::ImageSubresourceRange MakeSubresourceRange(vk::ImageAspectFlags aspect, u32 
     };
 }
 
-constexpr u64 UPLOAD_BUFFER_SIZE = 512 * 1024 * 1024;
-constexpr u64 DOWNLOAD_BUFFER_SIZE = 16 * 1024 * 1024;
+constexpr u64 UPLOAD_BUFFER_SIZE = 512_MiB;
+constexpr u64 DOWNLOAD_BUFFER_SIZE = 16_MiB;
 
 } // Anonymous namespace
 
@@ -1562,7 +1564,7 @@ DebugScope::DebugScope(TextureRuntime& runtime, Common::Vec4f color, std::string
     if (!has_debug_tool) {
         return;
     }
-    scheduler.Record([color, label](vk::CommandBuffer cmdbuf) {
+    scheduler.Record([color, label = std::string(label)](vk::CommandBuffer cmdbuf) {
         const vk::DebugUtilsLabelEXT debug_label = {
             .pLabelName = label.data(),
             .color = std::array{color[0], color[1], color[2], color[3]},

@@ -18,8 +18,7 @@
 namespace Settings {
 
 enum class GraphicsAPI {
-    Software = 0,
-    Vulkan = 1
+    Vulkan = 0
 };
 
 enum class InitClock : u32 {

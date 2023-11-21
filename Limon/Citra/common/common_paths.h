@@ -21,7 +21,7 @@
 #ifdef _WIN32
 #define EMU_DATA_DIR "Citra"
 #elif defined(__APPLE__)
-#include <TargetConditionals.h>
+#import <TargetConditionals.h>
 #if TARGET_OS_IPHONE
 #define APPLE_EMU_DATA_DIR "Documents"
 #else

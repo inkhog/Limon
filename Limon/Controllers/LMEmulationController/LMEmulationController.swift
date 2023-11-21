@@ -88,6 +88,7 @@ class LMEmulationController : UIViewController {
             citra().setMetalLayer(screenView.screen.layer as! CAMetalLayer)
             Thread.setThreadPriority(1.0)
             Thread.detachNewThread {
+                print("here")
                 self.citra().run()
             }
         }

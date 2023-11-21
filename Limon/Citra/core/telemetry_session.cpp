@@ -15,8 +15,10 @@
 #include "core/telemetry_session.h"
 #include "network/network_settings.h"
 
+#ifdef ENABLE_WEB_SERVICE
 #include "web_service/telemetry_json.h"
 #include "web_service/verify_login.h"
+#endif
 
 namespace Core {
 
@@ -69,7 +71,11 @@ u64 RegenerateTelemetryId() {
 }
 
 bool VerifyLogin(const std::string& username, const std::string& token) {
+#ifdef ENABLE_WEB_SERVICE
     return WebService::VerifyLogin(NetSettings::values.web_api_url, username, token);
+#else
+    return false;
+#endif
 }
 
 TelemetrySession::TelemetrySession() = default;
@@ -81,9 +87,13 @@ TelemetrySession::~TelemetrySession() {
                                 .count()};
     AddField(Telemetry::FieldType::Session, "Shutdown_Time", shutdown_time);
 
+#ifdef ENABLE_WEB_SERVICE
     auto backend = std::make_unique<WebService::TelemetryJson>(NetSettings::values.web_api_url,
                                                                NetSettings::values.citra_username,
                                                                NetSettings::values.citra_token);
+#else
+    auto backend = std::make_unique<Telemetry::NullVisitor>();
+#endif
 
     // Complete the session, submitting to the web service backend if necessary
     field_collection.Accept(*backend);
@@ -150,11 +160,15 @@ void TelemetrySession::AddInitialInfo(Loader::AppLoader& app_loader) {
 }
 
 bool TelemetrySession::SubmitTestcase() {
+#ifdef ENABLE_WEB_SERVICE
     auto backend = std::make_unique<WebService::TelemetryJson>(NetSettings::values.web_api_url,
                                                                NetSettings::values.citra_username,
                                                                NetSettings::values.citra_token);
     field_collection.Accept(*backend);
     return backend->SubmitTestcase();
+#else
+    return false;
+#endif
 }
 
 } // namespace Core

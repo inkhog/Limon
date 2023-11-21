@@ -17,9 +17,8 @@ namespace Vulkan {
 
 enum class StateFlags {
     AllDirty = 0,
-    Renderpass = 1 << 0,
-    Pipeline = 1 << 1,
-    DescriptorSets = 1 << 2
+    Pipeline = 1 << 0,
+    DescriptorSets = 1 << 1,
 };
 
 DECLARE_ENUM_FLAG_OPERATORS(StateFlags)
@@ -31,7 +30,7 @@ class RenderpassCache;
 /// OpenGL-like operations on Vulkan command buffers.
 class Scheduler {
 public:
-    explicit Scheduler(const Instance& instance, RenderpassCache& renderpass_cache);
+    explicit Scheduler(const Instance& instance);
     ~Scheduler();
 
     /// Sends the current execution context to the GPU.
@@ -191,7 +190,6 @@ private:
     void AcquireNewChunk();
 
 private:
-    RenderpassCache& renderpass_cache;
     std::unique_ptr<MasterSemaphore> master_semaphore;
     CommandPool command_pool;
     std::unique_ptr<CommandChunk> chunk;

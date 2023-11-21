@@ -32,11 +32,21 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         let welcomeController = OBWelcomeController(title: "What's New", detailText: "See what's been added, changed, fixed or removed in the latest version of Limón",
                                                     icon: .init(systemName: "app.badge.fill")?.applyingSymbolConfiguration(.init(paletteColors: [.systemRed, .tintColor])))
-        welcomeController.set_shouldInlineButtontray(true)
+        // welcomeController.set_shouldInlineButtontray(true)
         
+<<<<<<< HEAD
         welcomeController.addBulletedListItem(withTitle: "Added Extended Virtual Addressing",
                                               description: "Added Extended Virtual Addressing to improve performance overall but more so for when JIT is not enabled",
                                               image: .init(systemName: "memorychip.fill"))
+=======
+        
+        welcomeController.addBulletedListItem(withTitle: "Fixed Menu Music Crash", description: "Fixed a crash that occurred when no menu.mp3 is available",
+                                              image: .init(systemName: "speaker.wave.3.fill"))
+        welcomeController.addBulletedListItem(withTitle: "Fixed Async Shader Presentation", description: "Fixed an an issue where Async Shader Presentation would not set correctly",
+                                              image: .init(systemName: "moonphase.first.quarter"))
+        welcomeController.addBulletedListItem(withTitle: "Improved Out-Of-Game Settings Menu", description: "Improved how the out-of-game settings menu is displayed making it easier to follow and understand",
+                                              image: .init(systemName: "gearshape.fill"))
+>>>>>>> 46f44666a10b156bfe61ce5bdbca30ce3a723f6e
         
         
         var acknowledgeButtonConfiguration = UIButton.Configuration.filled()
@@ -86,6 +96,25 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         } catch {
             print(error.localizedDescription)
         }
+        
+        let foldersNames = ["cheats", "config", "log", "nand", "roms", "sdmc", "shaders", "sounds", "states", "sysdata"]
+        foldersNames.forEach { folderName in
+            let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(folderName, conformingTo: .folder)
+            if !FileManager.default.fileExists(atPath: url.path) {
+                do {
+                    try FileManager.default.createDirectory(atPath: url.path, withIntermediateDirectories: false)
+                } catch {
+                    print(error.localizedDescription)
+                }
+            }
+        }
+        
+        
+        let thread = Thread {
+            
+        }
+        thread.start()
+        thread.cancel()
     }
     
     func sceneDidDisconnect(_ scene: UIScene) {
@@ -150,12 +179,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         UserDefaults.standard.set(true, forKey: "spirvShaderGen")
         UserDefaults.standard.set(false, forKey: "asyncShaderCompilation")
-        UserDefaults.standard.set(true, forKey: "asyncPresentation")
+        UserDefaults.standard.set(true, forKey: "asyncShaderPresentation")
         UserDefaults.standard.set(true, forKey: "useHWShader")
         UserDefaults.standard.set(true, forKey: "useDiskShaderCache")
         UserDefaults.standard.set(true, forKey: "shadersAccurateMul")
         UserDefaults.standard.set(true, forKey: "useNewVSync")
-        UserDefaults.standard.set(true, forKey: "useShaderJIT")
+        UserDefaults.standard.set(false, forKey: "useShaderJIT")
         UserDefaults.standard.set(1, forKey: "resolutionFactor")
         UserDefaults.standard.set(100, forKey: "frameLimit")
         UserDefaults.standard.set(0, forKey: "textureFilter")

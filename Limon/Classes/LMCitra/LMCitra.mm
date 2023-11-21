@@ -332,7 +332,7 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
 }
 
 -(void) load {
-    Core::LoadState([_savePath.path UTF8String]);
+    //Core::LoadState([_savePath.path UTF8String]);
     
     _isLoading = FALSE;
     _isPaused = FALSE;
@@ -349,7 +349,7 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
         [[NSFileManager defaultManager] createDirectoryAtPath:saveStateForGameFolder.path withIntermediateDirectories:FALSE attributes:NULL error:NULL];
     }
     
-    Core::SaveState([[saveStateForGameFolder URLByAppendingPathComponent:[NSUUID UUID].UUIDString].path UTF8String], title_id);
+    //Core::SaveState([[saveStateForGameFolder URLByAppendingPathComponent:[NSUUID UUID].UUIDString].path UTF8String], title_id);
     
     _isSaving = FALSE;
     _isPaused = FALSE;

@@ -13,7 +13,7 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 
-#include <vk_mem_alloc/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 #ifdef __APPLE__
 #include <MoltenVK/mvk_config.h>
@@ -403,10 +403,12 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR,
         vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceIndexTypeUint8FeaturesEXT,
         vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT,
-        vk::PhysicalDevicePipelineCreationCacheControlFeaturesEXT>();
+        vk::PhysicalDevicePipelineCreationCacheControlFeaturesEXT,
+        vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR>();
     const vk::StructureChain properties_chain =
         physical_device.getProperties2<vk::PhysicalDeviceProperties2,
-                                       vk::PhysicalDevicePortabilitySubsetPropertiesKHR>();
+                                       vk::PhysicalDevicePortabilitySubsetPropertiesKHR,
+                                       vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>();
 
     features = feature_chain.get().features;
     if (available_extensions.empty()) {
@@ -414,7 +416,7 @@ bool Instance::CreateDevice() {
         return false;
     }
 
-    boost::container::static_vector<const char*, 12> enabled_extensions;
+    boost::container::static_vector<const char*, 13> enabled_extensions;
     const auto add_extension = [&](std::string_view extension, bool blacklist = false,
                                    std::string_view reason = "") -> bool {
         const auto result =
@@ -436,15 +438,19 @@ bool Instance::CreateDevice() {
     };
 
     const bool is_nvidia = driver_id == vk::DriverIdKHR::eNvidiaProprietary;
+    const bool is_moltenvk = driver_id == vk::DriverIdKHR::eMoltenvk;
     const bool is_arm = driver_id == vk::DriverIdKHR::eArmProprietary;
     const bool is_qualcomm = driver_id == vk::DriverIdKHR::eQualcommProprietary;
+    const bool is_turnip = driver_id == vk::DriverIdKHR::eMesaTurnip;
 
     add_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     image_format_list = add_extension(VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME);
     shader_stencil_export = add_extension(VK_EXT_SHADER_STENCIL_EXPORT_EXTENSION_NAME);
+    external_memory_host = add_extension(VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME);
     tooling_info = add_extension(VK_EXT_TOOLING_INFO_EXTENSION_NAME);
-    const bool has_timeline_semaphores = add_extension(
-        VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME, is_qualcomm, "it is broken on Qualcomm drivers");
+    const bool has_timeline_semaphores =
+        add_extension(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME, is_qualcomm || is_turnip,
+                      "it is broken on Qualcomm drivers");
     const bool has_portability_subset = add_extension(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
     const bool has_extended_dynamic_state =
         add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME, is_arm || is_qualcomm,
@@ -459,6 +465,9 @@ bool Instance::CreateDevice() {
     const bool has_pipeline_creation_cache_control =
         add_extension(VK_EXT_PIPELINE_CREATION_CACHE_CONTROL_EXTENSION_NAME, is_nvidia,
                       "it is broken on Nvidia drivers");
+    const bool has_fragment_shader_barycentric =
+        add_extension(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME, is_moltenvk,
+                      "the PerVertexKHR attribute is not supported by MoltenVK");
 
     const auto family_properties = physical_device.getQueueFamilyProperties();
     if (family_properties.empty()) {
@@ -514,6 +523,7 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceIndexTypeUint8FeaturesEXT{},
         vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT{},
         vk::PhysicalDevicePipelineCreationCacheControlFeaturesEXT{},
+        vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR{},
     };
 
 #define PROP_GET(structName, prop, property) property = properties_chain.get<structName>().prop;
@@ -579,6 +589,18 @@ bool Instance::CreateDevice() {
                  pipelineCreationCacheControl, pipeline_creation_cache_control)
     } else {
         device_chain.unlink<vk::PhysicalDevicePipelineCreationCacheControlFeaturesEXT>();
+    }
+
+    if (external_memory_host) {
+        PROP_GET(vk::PhysicalDeviceExternalMemoryHostPropertiesEXT, minImportedHostPointerAlignment,
+                 min_imported_host_pointer_alignment);
+    }
+
+    if (has_fragment_shader_barycentric) {
+        FEAT_SET(vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR, fragmentShaderBarycentric,
+                 fragment_shader_barycentric)
+    } else {
+        device_chain.unlink<vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR>();
     }
 
 #undef PROP_GET

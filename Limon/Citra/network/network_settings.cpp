@@ -6,8 +6,6 @@
 
 namespace NetSettings {
 
-Values values = {
-    
-};
+Values values = {};
 
 }

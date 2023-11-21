@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #include "common/alignment.h"
+#include "common/literals.h"
 #include "common/logging/log.h"
 #include "common/math_util.h"
 #include "common/microprofile.h"
@@ -28,11 +29,12 @@ MICROPROFILE_DEFINE(Vulkan_Drawing, "Vulkan", "Drawing", MP_RGB(128, 128, 192));
 using TriangleTopology = Pica::PipelineRegs::TriangleTopology;
 using VideoCore::SurfaceType;
 
+using namespace Common::Literals;
 using namespace Pica::Shader::Generator;
 
-constexpr u64 STREAM_BUFFER_SIZE = 64 * 1024 * 1024;
-constexpr u64 UNIFORM_BUFFER_SIZE = 4 * 1024 * 1024;
-constexpr u64 TEXTURE_BUFFER_SIZE = 2 * 1024 * 1024;
+constexpr u64 STREAM_BUFFER_SIZE = 64_MiB;
+constexpr u64 UNIFORM_BUFFER_SIZE = 4_MiB;
+constexpr u64 TEXTURE_BUFFER_SIZE = 2_MiB;
 
 constexpr vk::BufferUsageFlags BUFFER_USAGE =
     vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer;
@@ -335,6 +337,14 @@ bool RasterizerVulkan::SetupGeometryShader() {
         return false;
     }
 
+    // Enable the quaternion fix-up geometry-shader only if we are actually doing per-fragment
+    // lighting and care about proper quaternions. Otherwise just use standard vertex+fragment
+    // shaders. We also don't need a geometry shader if the barycentric extension is supported.
+    if (regs.lighting.disable || instance.IsFragmentShaderBarycentricSupported()) {
+        pipeline_cache.UseTrivialGeometryShader();
+        return true;
+    }
+
     return pipeline_cache.UseFixedGeometryShader(regs);
 }
 
@@ -497,7 +507,7 @@ bool RasterizerVulkan::Draw(bool accelerate, bool is_indexed) {
 
     // Sync and bind the shader
     if (shader_dirty) {
-        pipeline_cache.UseFragmentShader(regs);
+        pipeline_cache.UseFragmentShader(regs, user_config);
         shader_dirty = false;
     }
 
@@ -512,30 +522,13 @@ bool RasterizerVulkan::Draw(bool accelerate, bool is_indexed) {
 
     // Configure viewport and scissor
     const auto viewport = fb_helper.Viewport();
-    scheduler.Record([viewport, draw_rect](vk::CommandBuffer cmdbuf) {
-        const vk::Viewport vk_viewport = {
-            .x = static_cast<f32>(viewport.x),
-            .y = static_cast<f32>(viewport.y),
-            .width = static_cast<f32>(viewport.width),
-            .height = static_cast<f32>(viewport.height),
-            .minDepth = 0.f,
-            .maxDepth = 1.f,
-        };
-
-        const vk::Rect2D scissor = {
-            .offset{
-                .x = static_cast<s32>(draw_rect.left),
-                .y = static_cast<s32>(draw_rect.bottom),
-            },
-            .extent{
-                .width = draw_rect.GetWidth(),
-                .height = draw_rect.GetHeight(),
-            },
-        };
-
-        cmdbuf.setViewport(0, vk_viewport);
-        cmdbuf.setScissor(0, scissor);
-    });
+    pipeline_info.dynamic.viewport = Common::Rectangle<s32>{
+        viewport.x,
+        viewport.y,
+        viewport.x + viewport.width,
+        viewport.y + viewport.height,
+    };
+    pipeline_info.dynamic.scissor = draw_rect;
 
     // Draw the vertex batch
     bool succeeded = true;

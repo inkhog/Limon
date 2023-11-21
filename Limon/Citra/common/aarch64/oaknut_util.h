@@ -1,9 +1,6 @@
-//
-//  oaknut_util.h
-//  Limon
-//
-//  Created by Jarrod Norwell on 10/21/23.
-//
+// Copyright 2023 Citra Emulator Project
+// Licensed under GPLv2 or any later version
+// Refer to the license.txt file included.
 
 #pragma once
 
@@ -33,13 +30,11 @@ inline void CallFarFunction(oaknut::CodeGenerator& code, const T f) {
     if (IsWithin128M(code, addr)) {
         code.BL(reinterpret_cast<const void*>(f));
     } else {
-        // ABI_RETURN is a safe temp register to use before a call
-
-        // oaknut does not support `const` arguments, needs a local copy
-        oaknut::XReg local_return(ABI_RETURN.index());
-
-        code.MOVP2R(local_return.toX(), reinterpret_cast<const void*>(f));
-        code.BLR(local_return.toX());
+        // X16(IP0) and X17(IP1) is the standard veneer register
+        // LR is also available as an intermediate register
+        // https://developer.arm.com/documentation/102374/0101/Procedure-Call-Standard
+        code.MOVP2R(oaknut::util::X16, reinterpret_cast<const void*>(f));
+        code.BLR(oaknut::util::X16);
     }
 }
 

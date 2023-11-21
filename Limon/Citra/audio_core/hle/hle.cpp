@@ -8,17 +8,15 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/weak_ptr.hpp>
 #include "audio_core/audio_types.h"
-#include "common/archives.h"
-#include "audio_core/hle/audiotoolbox_decoder.h"
 #include "audio_core/hle/common.h"
 #include "audio_core/hle/decoder.h"
-#include "audio_core/hle/fdk_decoder.h"
-#include "audio_core/hle/ffmpeg_decoder.h"
+#include "audio_core/hle/faad2_decoder.h"
 #include "audio_core/hle/hle.h"
 #include "audio_core/hle/mixers.h"
 #include "audio_core/hle/shared_memory.h"
 #include "audio_core/hle/source.h"
 #include "audio_core/sink.h"
+#include "common/archives.h"
 #include "common/assert.h"
 #include "common/common_types.h"
 #include "common/hash.h"
@@ -116,13 +114,7 @@ private:
 static std::vector<std::function<std::unique_ptr<HLE::DecoderBase>(Memory::MemorySystem&)>>
     decoder_backends = {
         [](Memory::MemorySystem& memory) -> std::unique_ptr<HLE::DecoderBase> {
-            return std::make_unique<HLE::AudioToolboxDecoder>(memory);
-        },
-        [](Memory::MemorySystem& memory) -> std::unique_ptr<HLE::DecoderBase> {
-            return std::make_unique<HLE::FDKDecoder>(memory);
-        },
-        [](Memory::MemorySystem& memory) -> std::unique_ptr<HLE::DecoderBase> {
-            return std::make_unique<HLE::FFMPEGDecoder>(memory);
+            return std::make_unique<HLE::FAAD2Decoder>(memory);
         },
 };
 
