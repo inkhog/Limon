@@ -34,21 +34,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                                                     icon: .init(systemName: "app.badge.fill")?.applyingSymbolConfiguration(.init(paletteColors: [.systemRed, .tintColor])))
         welcomeController.set_shouldInlineButtontray(true)
         
-        welcomeController.addBulletedListItem(withTitle: "Added Full iOS 15 Support",
-                                              description: "Added version checks for iOS 16 and above allowing for iOS 15 support to be implemented",
-                                              image: .init(systemName: "pause.rectangle.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Added Custom Menu Sound Support",
-                                              description: "Added the ability to have custom menu music play when browsing the game library: add menu.mp3 to sounds/",
-                                              image: .init(systemName: "music.quarternote.3"))
-        welcomeController.addBulletedListItem(withTitle: "Fixed Landscape Touch Detection",
-                                              description: "Fixed an issue where touches on the bottom screen would misaligned from the location of the touch",
-                                              image: .init(systemName: "hand.tap.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Fixed Multiplayer Direct Connect",
-                                              description: "Fixed an issue where the entered port was not being set",
-                                              image: .init(systemName: "person.line.dotted.person.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Fixed Import CIA",
-                                              description: "Fixed an issue where the app would crash when tapping Import CIA",
-                                              image: .init(systemName: "arrow.down.doc.fill"))
+        welcomeController.addBulletedListItem(withTitle: "Added Extended Virtual Addressing",
+                                              description: "Added Extended Virtual Addressing to improve performance overall but more so for when JIT is not enabled",
+                                              image: .init(systemName: "memorychip.fill"))
         
         
         var acknowledgeButtonConfiguration = UIButton.Configuration.filled()
@@ -81,7 +69,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         })))
         welcomeController.buttonTray.setCaptionText("v\(version) (\(build))", style: 0)
         
-        UserDefaults.standard.removeObject(forKey: "acknowledgedWhatsNew_\(version).\(build)")
+        // UserDefaults.standard.removeObject(forKey: "acknowledgedWhatsNew_\(version).\(build)")
         window.rootViewController = UserDefaults.standard.bool(forKey: "dontShowWhatsNewAgain") ? LMLoadingController() : UserDefaults.standard.bool(forKey: "acknowledgedWhatsNew_\(version).\(build)") ? LMLoadingController() : welcomeController
         window.tintColor = .systemYellow
         window.makeKeyAndVisible()
@@ -127,6 +115,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Use this method to save data, release shared resources, and store enough scene-specific state information
         // to restore the scene back to its current state.
         LMCitra.shared().pause()
+        NotificationCenter.default.post(name: .init("sceneDidEnterBackground"), object: nil)
     }
     
     

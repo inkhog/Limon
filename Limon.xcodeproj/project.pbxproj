@@ -30,6 +30,7 @@
 		E621F1672AD3BFE600159D40 /* LMGamesController+UIDocumentPickerDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E621F1662AD3BFE600159D40 /* LMGamesController+UIDocumentPickerDelegate.swift */; };
 		E62291E42AE3AB46002D6B45 /* shader_jit_a64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E62291E22AE3AB46002D6B45 /* shader_jit_a64.cpp */; };
 		E62291E72AE3AB86002D6B45 /* shader_jit_a64_compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E62291E52AE3AB86002D6B45 /* shader_jit_a64_compiler.cpp */; };
+		E628E2142B0B04F800770017 /* LMGamesController+OutOfGameSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E628E2132B0B04F800770017 /* LMGamesController+OutOfGameSettings.swift */; };
 		E645F7472AD3BB8400348223 /* Bruno.swift in Sources */ = {isa = PBXBuildFile; fileRef = E645F7462AD3BB8400348223 /* Bruno.swift */; };
 		E65E544D2ACFA5C5004FD046 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E65E544C2ACFA5C5004FD046 /* AppDelegate.swift */; };
 		E65E544F2ACFA5C5004FD046 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E65E544E2ACFA5C5004FD046 /* SceneDelegate.swift */; };
@@ -525,6 +526,7 @@
 		E621F1662AD3BFE600159D40 /* LMGamesController+UIDocumentPickerDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LMGamesController+UIDocumentPickerDelegate.swift"; sourceTree = "<group>"; };
 		E62291E22AE3AB46002D6B45 /* shader_jit_a64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = shader_jit_a64.cpp; sourceTree = "<group>"; };
 		E62291E52AE3AB86002D6B45 /* shader_jit_a64_compiler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = shader_jit_a64_compiler.cpp; sourceTree = "<group>"; };
+		E628E2132B0B04F800770017 /* LMGamesController+OutOfGameSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LMGamesController+OutOfGameSettings.swift"; sourceTree = "<group>"; };
 		E645F7462AD3BB8400348223 /* Bruno.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bruno.swift; sourceTree = "<group>"; };
 		E65E54492ACFA5C5004FD046 /* Limon.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Limon.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E65E544C2ACFA5C5004FD046 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -1122,6 +1124,7 @@
 			isa = PBXGroup;
 			children = (
 				E621F1662AD3BFE600159D40 /* LMGamesController+UIDocumentPickerDelegate.swift */,
+				E628E2132B0B04F800770017 /* LMGamesController+OutOfGameSettings.swift */,
 			);
 			path = Delegates;
 			sourceTree = "<group>";
@@ -2711,6 +2714,7 @@
 				E6750B9A2AE304F00088C05F /* cfg_nor.cpp in Sources */,
 				E6750CCE2AE304F10088C05F /* interpolate.cpp in Sources */,
 				E6750C122AE304F10088C05F /* title_metadata.cpp in Sources */,
+				E628E2142B0B04F800770017 /* LMGamesController+OutOfGameSettings.swift in Sources */,
 				E6750B912AE304F00088C05F /* err_f.cpp in Sources */,
 				E6750B5B2AE304F00088C05F /* lcd.cpp in Sources */,
 				E6750B572AE304F00088C05F /* settings.cpp in Sources */,
@@ -3114,7 +3118,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++23";
 				CODE_SIGN_ENTITLEMENTS = Limon/Limon.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = Z3ZEABYY6P;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_OPTIMIZATION_LEVEL = z;
@@ -3122,7 +3126,7 @@
 				HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/Limon/Citra\"",
 					"\"$(SRCROOT)/Limon/Dependencies/include\"",
-					"\"$(HOME)/VulkanSDK/1.3.261.1/MoltenVK/include\"",
+					"\"$(SRCROOT)/Limon/Dependencies/include/MoltenVK\"",
 				);
 				INFOPLIST_FILE = Limon/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Limón";
@@ -3148,6 +3152,7 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "$(SRCROOT)/Limon/Limon-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Osize";
@@ -3164,7 +3169,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++23";
 				CODE_SIGN_ENTITLEMENTS = Limon/Limon.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = Z3ZEABYY6P;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_OPTIMIZATION_LEVEL = z;
@@ -3176,7 +3181,7 @@
 				HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/Limon/Citra\"",
 					"\"$(SRCROOT)/Limon/Dependencies/include\"",
-					"\"$(HOME)/VulkanSDK/1.3.261.1/MoltenVK/include\"",
+					"\"$(SRCROOT)/Limon/Dependencies/include/MoltenVK\"",
 				);
 				INFOPLIST_FILE = Limon/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Limón";
@@ -3202,6 +3207,7 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "$(SRCROOT)/Limon/Limon-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Osize";

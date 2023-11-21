@@ -150,7 +150,7 @@ std::shared_ptr<Common::DynamicLibrary> vulkan_library;
     
     Settings::values.spirv_shader_gen.SetValue(EmulationSettings.spirvShaderGen);
     Settings::values.async_shader_compilation.SetValue(EmulationSettings.asyncShaderCompilation);
-    Settings::values.async_presentation.SetValue(EmulationSettings.asyncPresentation);
+    Settings::values.async_presentation.SetValue(EmulationSettings.asyncShaderPresentation);
     Settings::values.use_hw_shader.SetValue(EmulationSettings.useHWShader);
     Settings::values.use_disk_shader_cache.SetValue(EmulationSettings.useDiskShaderCache);
     Settings::values.shaders_accurate_mul.SetValue(EmulationSettings.shadersAccurateMul);
