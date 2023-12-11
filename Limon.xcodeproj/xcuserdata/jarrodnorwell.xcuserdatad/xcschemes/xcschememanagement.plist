@@ -4,15 +4,20 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
-		<key>Limon.xcscheme_^#shared#^_</key>
+		<key>Dependencies.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>0</integer>
 		</dict>
+		<key>Limon.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>3</integer>
+		</dict>
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
-		<key>E65E54482ACFA5C5004FD046</key>
+		<key>E62EB8F72B0C5C1D001C2E91</key>
 		<dict>
 			<key>primary</key>
 			<true/>

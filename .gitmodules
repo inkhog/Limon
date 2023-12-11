@@ -1,3 +1,3 @@
-[submodule "Limon/Dependencies"]
-	path = Limon/Dependencies
+[submodule "Limon/Core/Dependencies"]
+	path = Limon/Core/Dependencies
 	url = https://github.com/emuplace/Limon-Dependencies

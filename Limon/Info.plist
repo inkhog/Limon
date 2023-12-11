@@ -43,29 +43,6 @@
 	</dict>
 	<key>UIFileSharingEnabled</key>
 	<true/>
-	<key>UTExportedTypeDeclarations</key>
-	<array>
-		<dict>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.data</string>
-			</array>
-			<key>UTTypeDescription</key>
-			<string>CTR Importable Archive</string>
-			<key>UTTypeIconFiles</key>
-			<array/>
-			<key>UTTypeIdentifier</key>
-			<string>com.nintendo-3ds.cia</string>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>cia</string>
-					<string>CIA</string>
-				</array>
-			</dict>
-		</dict>
-	</array>
 	<key>UTImportedTypeDeclarations</key>
 	<array>
 		<dict>
@@ -83,8 +60,8 @@
 			<dict>
 				<key>public.filename-extension</key>
 				<array>
-					<string>cia</string>
 					<string>CIA</string>
+					<string>cia</string>
 				</array>
 			</dict>
 		</dict>

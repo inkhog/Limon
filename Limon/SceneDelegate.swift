@@ -6,11 +6,10 @@
 //
 
 import AVFAudio
-import Toast
 import UIKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
-    var window: ToastWindow?
+    var window: UIWindow?
     
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
@@ -34,19 +33,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                                                     icon: .init(systemName: "app.badge.fill")?.applyingSymbolConfiguration(.init(paletteColors: [.systemRed, .tintColor])))
         // welcomeController.set_shouldInlineButtontray(true)
         
-<<<<<<< HEAD
-        welcomeController.addBulletedListItem(withTitle: "Added Extended Virtual Addressing",
-                                              description: "Added Extended Virtual Addressing to improve performance overall but more so for when JIT is not enabled",
-                                              image: .init(systemName: "memorychip.fill"))
-=======
-        
-        welcomeController.addBulletedListItem(withTitle: "Fixed Menu Music Crash", description: "Fixed a crash that occurred when no menu.mp3 is available",
-                                              image: .init(systemName: "speaker.wave.3.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Fixed Async Shader Presentation", description: "Fixed an an issue where Async Shader Presentation would not set correctly",
-                                              image: .init(systemName: "moonphase.first.quarter"))
-        welcomeController.addBulletedListItem(withTitle: "Improved Out-Of-Game Settings Menu", description: "Improved how the out-of-game settings menu is displayed making it easier to follow and understand",
+        welcomeController.addBulletedListItem(withTitle: "Updated Citra Core",
+                                              description: "Updated the Citra core to the latest available on GitHub",
+                                              image: .init(systemName: "gamecontroller.fill"))
+        welcomeController.addBulletedListItem(withTitle: "Added Multi-Import for CIAs",
+                                              description: "Added the ability to import multiple CIA roms at once",
+                                              image: .init(systemName: "arrow.down.doc.fill"))
+        welcomeController.addBulletedListItem(withTitle: "Added Texture Sampling Submenu",
+                                              description: "Added the new texture sampling submenu under Renderer > More",
                                               image: .init(systemName: "gearshape.fill"))
->>>>>>> 46f44666a10b156bfe61ce5bdbca30ce3a723f6e
         
         
         var acknowledgeButtonConfiguration = UIButton.Configuration.filled()
@@ -108,13 +103,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 }
             }
         }
-        
-        
-        let thread = Thread {
-            
-        }
-        thread.start()
-        thread.cancel()
     }
     
     func sceneDidDisconnect(_ scene: UIScene) {
