@@ -42,6 +42,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             welcomeController.addBulletedListItem(withTitle: "Fixed Application Crashing on iOS 15 and 16",
                                                   description: "Fixed the application crashing on iOS 15 and 16 by removing this screen altogether",
                                                   image: .init(systemName: "car.rear.and.tire.marks"))
+            welcomeController.addBulletedListItem(withTitle: "Updated MoltenVK to Custom Fork",
+                                                  description: "Updated MoltenVk to my custom work with logicOp, wideLines and geometryShader support",
+                                                  image: .init(systemName: "display"))
             
             
             var acknowledgeButtonConfiguration = UIButton.Configuration.filled()
