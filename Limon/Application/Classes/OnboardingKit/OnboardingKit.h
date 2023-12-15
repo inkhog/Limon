@@ -36,6 +36,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, retain) OBButtonTray *buttonTray;
 
 -(OBWelcomeController *) initWithTitle:(NSString *)arg1 detailText:(NSString *)arg2 icon:(UIImage * _Nullable)arg3;
+-(OBWelcomeController *) initWithTitle:(NSString *)arg1 detailText:(NSString *)arg2 symbolName:(NSString * _Nullable)arg3;
 
 -(void) addBulletedListItemWithTitle:(NSString *)arg1 description:(NSString *)arg2 image:(UIImage * _Nullable)arg3;
 -(void) addBulletedListItemWithTitle:(NSString *)arg1 description:(NSString *)arg2 image:(UIImage * _Nullable)arg3 linkButton:(OBBulletedListItemLinkButton * _Nullable)arg4;

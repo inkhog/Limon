@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		E62108AB2B26A8A300DFC8E8 /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = E62108AA2B26A8A300DFC8E8 /* libMoltenVK.dylib */; };
-		E62108AC2B26A9EB00DFC8E8 /* libMoltenVK.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = E62108AA2B26A8A300DFC8E8 /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		E62EB8FC2B0C5C1D001C2E91 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E62EB8FB2B0C5C1D001C2E91 /* AppDelegate.swift */; };
 		E62EB8FE2B0C5C1D001C2E91 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E62EB8FD2B0C5C1D001C2E91 /* SceneDelegate.swift */; };
 		E62EB9052B0C5C1E001C2E91 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E62EB9042B0C5C1E001C2E91 /* Assets.xcassets */; };
@@ -474,6 +472,12 @@
 		E6E89E282B0C818C009A6CAB /* libcryptopp.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = E6E89E1B2B0C818C009A6CAB /* libcryptopp.xcframework */; };
 		E6E89E292B0C818C009A6CAB /* libfaad.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = E6E89E1C2B0C818C009A6CAB /* libfaad.xcframework */; };
 		E6E89E2A2B0C818C009A6CAB /* libSoundTouch.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = E6E89E1D2B0C818C009A6CAB /* libSoundTouch.xcframework */; };
+		E6E8C6E62B2C24E500A0AFA8 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = E6E8C6E12B2C24E500A0AFA8 /* LICENSE */; };
+		E6E8C6E72B2C24E500A0AFA8 /* fishhook.c in Sources */ = {isa = PBXBuildFile; fileRef = E6E8C6E22B2C24E500A0AFA8 /* fishhook.c */; };
+		E6E8C6E82B2C24E500A0AFA8 /* utils.m in Sources */ = {isa = PBXBuildFile; fileRef = E6E8C6E42B2C24E500A0AFA8 /* utils.m */; };
+		E6E8C6E92B2C24E500A0AFA8 /* TrollStoreJitEnabler.m in Sources */ = {isa = PBXBuildFile; fileRef = E6E8C6E52B2C24E500A0AFA8 /* TrollStoreJitEnabler.m */; };
+		E6E8C7172B2C44D000A0AFA8 /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = E6E8C7162B2C44D000A0AFA8 /* libMoltenVK.dylib */; };
+		E6E8C7182B2C44D300A0AFA8 /* libMoltenVK.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = E6E8C7162B2C44D000A0AFA8 /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -485,7 +489,7 @@
 			files = (
 				E6DC09B42B0CA1A000C0666F /* libavutil.xcframework in Embed Frameworks */,
 				E6DC09B62B0CA1A000C0666F /* libswresample.xcframework in Embed Frameworks */,
-				E62108AC2B26A9EB00DFC8E8 /* libMoltenVK.dylib in Embed Frameworks */,
+				E6E8C7182B2C44D300A0AFA8 /* libMoltenVK.dylib in Embed Frameworks */,
 				E6DC09B02B0CA1A000C0666F /* libavfilter.xcframework in Embed Frameworks */,
 				E6DC09B22B0CA1A000C0666F /* libavformat.xcframework in Embed Frameworks */,
 				E6DC09B82B0CA1A000C0666F /* libswscale.xcframework in Embed Frameworks */,
@@ -497,7 +501,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		E62108AA2B26A8A300DFC8E8 /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libMoltenVK.dylib; sourceTree = "<group>"; };
 		E62EB8F82B0C5C1D001C2E91 /* Limon.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Limon.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E62EB8FB2B0C5C1D001C2E91 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		E62EB8FD2B0C5C1D001C2E91 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -1483,6 +1486,13 @@
 		E6E89E1B2B0C818C009A6CAB /* libcryptopp.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libcryptopp.xcframework; sourceTree = "<group>"; };
 		E6E89E1C2B0C818C009A6CAB /* libfaad.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libfaad.xcframework; sourceTree = "<group>"; };
 		E6E89E1D2B0C818C009A6CAB /* libSoundTouch.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libSoundTouch.xcframework; sourceTree = "<group>"; };
+		E6E8C6DF2B2C24E500A0AFA8 /* utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utils.h; sourceTree = "<group>"; };
+		E6E8C6E12B2C24E500A0AFA8 /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		E6E8C6E22B2C24E500A0AFA8 /* fishhook.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fishhook.c; sourceTree = "<group>"; };
+		E6E8C6E32B2C24E500A0AFA8 /* fishhook.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fishhook.h; sourceTree = "<group>"; };
+		E6E8C6E42B2C24E500A0AFA8 /* utils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = utils.m; sourceTree = "<group>"; };
+		E6E8C6E52B2C24E500A0AFA8 /* TrollStoreJitEnabler.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TrollStoreJitEnabler.m; sourceTree = "<group>"; };
+		E6E8C7162B2C44D000A0AFA8 /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libMoltenVK.dylib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1492,7 +1502,7 @@
 			files = (
 				E6E121922B0CEA5A00A2EECB /* CoreMotion.framework in Frameworks */,
 				E6DC09B72B0CA1A000C0666F /* libswscale.xcframework in Frameworks */,
-				E62108AB2B26A8A300DFC8E8 /* libMoltenVK.dylib in Frameworks */,
+				E6E8C7172B2C44D000A0AFA8 /* libMoltenVK.dylib in Frameworks */,
 				E6E121902B0CEA5600A2EECB /* GameController.framework in Frameworks */,
 				E6E89E222B0C818C009A6CAB /* boost_program_options.xcframework in Frameworks */,
 				E6E89E2A2B0C818C009A6CAB /* libSoundTouch.xcframework in Frameworks */,
@@ -1559,6 +1569,7 @@
 		E62EB9102B0C5CC8001C2E91 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				E6E8C6DE2B2C24E500A0AFA8 /* JIT */,
 				E62EB9112B0C5CC8001C2E91 /* Citra */,
 				E62EBE872B0C5D4F001C2E91 /* Dependencies */,
 			);
@@ -2997,9 +3008,9 @@
 				E6DC088F2B0C965E00C0666F /* libavfilter.xcframework */,
 				E6DC08902B0C965E00C0666F /* libavformat.xcframework */,
 				E6DC08912B0C965E00C0666F /* libavutil.xcframework */,
+				E6E8C7162B2C44D000A0AFA8 /* libMoltenVK.dylib */,
 				E6E89E1B2B0C818C009A6CAB /* libcryptopp.xcframework */,
 				E6E89E192B0C818C009A6CAB /* libenet.xcframework */,
-				E62108AA2B26A8A300DFC8E8 /* libMoltenVK.dylib */,
 				E6E89E1C2B0C818C009A6CAB /* libfaad.xcframework */,
 				E6DC08C02B0C9BF800C0666F /* libfmt.xcframework */,
 				E6DC08C12B0C9BF800C0666F /* libmcl.xcframework */,
@@ -3540,6 +3551,27 @@
 			path = format_reinterpreter;
 			sourceTree = "<group>";
 		};
+		E6E8C6DE2B2C24E500A0AFA8 /* JIT */ = {
+			isa = PBXGroup;
+			children = (
+				E6E8C6DF2B2C24E500A0AFA8 /* utils.h */,
+				E6E8C6E02B2C24E500A0AFA8 /* fishhook */,
+				E6E8C6E42B2C24E500A0AFA8 /* utils.m */,
+				E6E8C6E52B2C24E500A0AFA8 /* TrollStoreJitEnabler.m */,
+			);
+			path = JIT;
+			sourceTree = "<group>";
+		};
+		E6E8C6E02B2C24E500A0AFA8 /* fishhook */ = {
+			isa = PBXGroup;
+			children = (
+				E6E8C6E12B2C24E500A0AFA8 /* LICENSE */,
+				E6E8C6E22B2C24E500A0AFA8 /* fishhook.c */,
+				E6E8C6E32B2C24E500A0AFA8 /* fishhook.h */,
+			);
+			path = fishhook;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -3607,6 +3639,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E6E8C6E62B2C24E500A0AFA8 /* LICENSE in Resources */,
 				E62EB9082B0C5C1E001C2E91 /* LaunchScreen.storyboard in Resources */,
 				E62EB9052B0C5C1E001C2E91 /* Assets.xcassets in Resources */,
 			);
@@ -3670,6 +3703,7 @@
 				E62EBD122B0C5CC9001C2E91 /* cecd_ndm.cpp in Sources */,
 				E62EBD6A2B0C5CC9001C2E91 /* nfc_m.cpp in Sources */,
 				E62EBD5F2B0C5CC9001C2E91 /* news_s.cpp in Sources */,
+				E6E8C6E82B2C24E500A0AFA8 /* utils.m in Sources */,
 				E6396C9A2B1058150016C641 /* gl_state.cpp in Sources */,
 				E62EBCFE2B0C5CC9001C2E91 /* recorder.cpp in Sources */,
 				E62EBCF22B0C5CC9001C2E91 /* hle.cpp in Sources */,
@@ -3782,6 +3816,7 @@
 				E62EBD1B2B0C5CC9001C2E91 /* ptm.cpp in Sources */,
 				E62EBE562B0C5CCA001C2E91 /* material.cpp in Sources */,
 				E62EBD852B0C5CC9001C2E91 /* mii.cpp in Sources */,
+				E6E8C6E92B2C24E500A0AFA8 /* TrollStoreJitEnabler.m in Sources */,
 				E62EBCFC2B0C5CC9001C2E91 /* sink_details.cpp in Sources */,
 				E62EBDDC2B0C5CC9001C2E91 /* vfp.cpp in Sources */,
 				E6DC08EF2B0C9C9C00C0666F /* shader_gen.cpp in Sources */,
@@ -3893,6 +3928,7 @@
 				E62EBDD02B0C5CC9001C2E91 /* arm_tick_counts.cpp in Sources */,
 				E62EBCF32B0C5CC9001C2E91 /* lle.cpp in Sources */,
 				E62EBD632B0C5CC9001C2E91 /* bcfnt.cpp in Sources */,
+				E6E8C6E72B2C24E500A0AFA8 /* fishhook.c in Sources */,
 				E62EBDD42B0C5CC9001C2E91 /* arm_dyncom_dec.cpp in Sources */,
 				E62EBD222B0C5CC9001C2E91 /* nim_aoc.cpp in Sources */,
 				E62EBD172B0C5CC9001C2E91 /* srv.cpp in Sources */,
@@ -4214,6 +4250,7 @@
 					"\"$(HOME)/Documents/MoltenVK/Package/Release/MoltenVK/include\"",
 				);
 				INFOPLIST_FILE = Limon/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Limón";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -4228,7 +4265,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Limon/Core/Dependencies",
 				);
-				MARKETING_VERSION = 1.0.8.4;
+				MARKETING_VERSION = 1.0.8.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.antique.Limon;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -4273,6 +4310,7 @@
 					"\"$(HOME)/Documents/MoltenVK/Package/Release/MoltenVK/include\"",
 				);
 				INFOPLIST_FILE = Limon/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Limón";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -4287,7 +4325,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Limon/Core/Dependencies",
 				);
-				MARKETING_VERSION = 1.0.8.4;
+				MARKETING_VERSION = 1.0.8.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.antique.Limon;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

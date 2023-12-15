@@ -349,6 +349,12 @@ class LMGamesController : UICollectionViewController {
                 print(error.localizedDescription)
             }
         }
+        
+        if UserDefaults.standard.bool(forKey: "enabledJIT") {
+            let alertController = UIAlertController(title: "TrollStore JIT Enabled", message: nil, preferredStyle: .alert)
+            alertController.addAction(.init(title: "Cancel", style: .cancel))
+            present(alertController, animated: true)
+        }
     }
     
     override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {

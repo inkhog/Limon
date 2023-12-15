@@ -47,6 +47,10 @@
     return [[NSClassFromString(@"OBWelcomeController") alloc] initWithTitle:arg1 detailText:arg2 icon:arg3];
 }
 
+-(OBWelcomeController *) initWithTitle:(NSString *)arg1 detailText:(NSString *)arg2 symbolName:(NSString * _Nullable)arg3 {
+    return [[NSClassFromString(@"OBWelcomeController") alloc] initWithTitle:arg1 detailText:arg2 symbolName:arg3];
+}
+
 
 -(void) addBulletedListItemWithTitle:(NSString *)arg1 description:(NSString *)arg2 image:(UIImage * _Nullable)arg3 {
     [self addBulletedListItemWithTitle:arg1 description:arg2 image:arg3];

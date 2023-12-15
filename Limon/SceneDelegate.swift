@@ -28,54 +28,59 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             return
         }
         
+        // iOS 15 crashes on title:detailText:icon although it does exist
         
-        let welcomeController = OBWelcomeController(title: "What's New", detailText: "See what's been added, changed, fixed or removed in the latest version of Limón",
-                                                    icon: .init(systemName: "app.badge.fill")?.applyingSymbolConfiguration(.init(paletteColors: [.systemRed, .tintColor])))
-        // welcomeController.set_shouldInlineButtontray(true)
-        
-        welcomeController.addBulletedListItem(withTitle: "Updated Citra Core",
-                                              description: "Updated the Citra core to the latest available on GitHub",
-                                              image: .init(systemName: "gamecontroller.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Added Multi-Import for CIAs",
-                                              description: "Added the ability to import multiple CIA roms at once",
-                                              image: .init(systemName: "arrow.down.doc.fill"))
-        welcomeController.addBulletedListItem(withTitle: "Added Texture Sampling Submenu",
-                                              description: "Added the new texture sampling submenu under Renderer > More",
-                                              image: .init(systemName: "gearshape.fill"))
-        
-        
-        var acknowledgeButtonConfiguration = UIButton.Configuration.filled()
-        acknowledgeButtonConfiguration.attributedTitle = .init("Acknowledge", attributes: .init([
-            .font : UIFont.boldSystemFont(ofSize: UIFont.buttonFontSize)
-        ]))
-        acknowledgeButtonConfiguration.buttonSize = .large
-        acknowledgeButtonConfiguration.cornerStyle = .large
-        
-        var dontShowAgainButtonConfiguration = UIButton.Configuration.borderless()
-        dontShowAgainButtonConfiguration.attributedTitle = .init("Don't Show Again", attributes: .init([
-            .font : UIFont.boldSystemFont(ofSize: UIFont.buttonFontSize),
-            .foregroundColor : UIColor.systemRed
-        ]))
-        dontShowAgainButtonConfiguration.buttonSize = .large
-        
-        welcomeController.buttonTray.add(.init(configuration: acknowledgeButtonConfiguration, primaryAction: .init(handler: { _ in
-            UserDefaults.standard.set(true, forKey: "acknowledgedWhatsNew_\(version).\(build)")
+        if #available(iOS 17, *) {
+            let welcomeController = OBWelcomeController(title: "What's New", detailText: "See what's been added, changed, fixed or removed in the latest version of Limón",
+                                                        icon: .init(systemName: "app.badge.fill")?.applyingSymbolConfiguration(.init(paletteColors: [.systemRed, .tintColor])))
             
-            let loadingController = LMLoadingController()
-            loadingController.modalPresentationStyle = .fullScreen
-            welcomeController.present(loadingController, animated: true)
-        })))
-        welcomeController.buttonTray.add(.init(configuration: dontShowAgainButtonConfiguration, primaryAction: .init(handler: { _ in
-            UserDefaults.standard.set(true, forKey: "dontShowWhatsNewAgain")
+            // welcomeController.set_shouldInlineButtontray(true)
             
-            let loadingController = LMLoadingController()
-            loadingController.modalPresentationStyle = .fullScreen
-            welcomeController.present(loadingController, animated: true)
-        })))
-        welcomeController.buttonTray.setCaptionText("v\(version) (\(build))", style: 0)
+            welcomeController.addBulletedListItem(withTitle: "Added TrollStore JIT Support",
+                                                  description: "Added the ability to enable JIT through TrollStore on supported devices",
+                                                  image: .init(systemName: "ladybug.fill"))
+            welcomeController.addBulletedListItem(withTitle: "Fixed Application Crashing on iOS 15 and 16",
+                                                  description: "Fixed the application crashing on iOS 15 and 16 by removing this screen altogether",
+                                                  image: .init(systemName: "car.rear.and.tire.marks"))
+            
+            
+            var acknowledgeButtonConfiguration = UIButton.Configuration.filled()
+            acknowledgeButtonConfiguration.attributedTitle = .init("Acknowledge", attributes: .init([
+                .font : UIFont.boldSystemFont(ofSize: UIFont.buttonFontSize)
+            ]))
+            acknowledgeButtonConfiguration.buttonSize = .large
+            acknowledgeButtonConfiguration.cornerStyle = .large
+            
+            var dontShowAgainButtonConfiguration = UIButton.Configuration.borderless()
+            dontShowAgainButtonConfiguration.attributedTitle = .init("Don't Show Again", attributes: .init([
+                .font : UIFont.boldSystemFont(ofSize: UIFont.buttonFontSize),
+                .foregroundColor : UIColor.systemRed
+            ]))
+            dontShowAgainButtonConfiguration.buttonSize = .large
+            
+            welcomeController.buttonTray.add(.init(configuration: acknowledgeButtonConfiguration, primaryAction: .init(handler: { _ in
+                UserDefaults.standard.set(true, forKey: "acknowledgedWhatsNew_\(version).\(build)")
+                
+                let loadingController = LMLoadingController()
+                loadingController.modalPresentationStyle = .fullScreen
+                welcomeController.present(loadingController, animated: true)
+            })))
+            welcomeController.buttonTray.add(.init(configuration: dontShowAgainButtonConfiguration, primaryAction: .init(handler: { _ in
+                UserDefaults.standard.set(true, forKey: "dontShowWhatsNewAgain")
+                
+                let loadingController = LMLoadingController()
+                loadingController.modalPresentationStyle = .fullScreen
+                welcomeController.present(loadingController, animated: true)
+            })))
+            welcomeController.buttonTray.setCaptionText("v\(version) (\(build))", style: 0)
+            
+            window.rootViewController = UserDefaults.standard.bool(forKey: "dontShowWhatsNewAgain") ? LMLoadingController() : UserDefaults.standard.bool(forKey: "acknowledgedWhatsNew_\(version).\(build)") ? LMLoadingController() : welcomeController
+        } else {
+            window.rootViewController = LMLoadingController()
+        }
         
         // UserDefaults.standard.removeObject(forKey: "acknowledgedWhatsNew_\(version).\(build)")
-        window.rootViewController = UserDefaults.standard.bool(forKey: "dontShowWhatsNewAgain") ? LMLoadingController() : UserDefaults.standard.bool(forKey: "acknowledgedWhatsNew_\(version).\(build)") ? LMLoadingController() : welcomeController
+        
         window.tintColor = .systemYellow
         window.makeKeyAndVisible()
         
